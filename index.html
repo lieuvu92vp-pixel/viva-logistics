@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIVA Logistics Portal 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── RESET & BASE ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0B2341;--navy2:#162F52;--teal:#0EA47A;--teal2:#0B7A5C;
+  --red:#D94040;--amber:#E8A020;--blue:#2469B3;--blue2:#1a5298;
+  --bg:#F4F5F7;--bg2:#FFFFFF;--bg3:#F0F2F5;
+  --text:#1a1a2e;--text2:#5f6b7a;--text3:#9ba8b3;
+  --border:#DDE1E7;--border2:#c4cad4;
+  --radius:10px;--radius-sm:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+
+/* ── LOGIN ── */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:20px}
+.login-box{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-logo{text-align:center;margin-bottom:8px}
+.login-logo-text{font-size:28px;font-weight:700;color:var(--navy);letter-spacing:.5px}
+.login-sub{text-align:center;color:var(--text2);font-size:13px;margin-bottom:28px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.login-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:border .15s}
+.login-field input:focus{border-color:var(--blue)}
+.login-btn{width:100%;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;margin-top:4px;transition:background .15s}
+.login-btn:hover{background:var(--navy2)}
+.login-err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;min-height:18px}
+.login-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:12px}
+
+/* ── SHELL ── */
+.shell{display:flex;height:100vh;overflow:hidden}
+.shell.hidden{display:none}
+
+/* ── SIDEBAR ── */
+.sidebar{width:210px;background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo-name{font-size:20px;font-weight:700;color:#fff;letter-spacing:.3px}
+.sb-logo-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px}
+.sb-section{padding:14px 0 4px}
+.sb-label{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.3);padding:0 18px 6px;font-weight:500}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 18px;color:rgba(255,255,255,.65);cursor:pointer;border-left:3px solid transparent;transition:all .12s;font-size:12px;text-decoration:none}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--teal)}
+.sb-item svg{flex-shrink:0;opacity:.8;width:16px;height:16px}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:99px;padding:1px 6px;font-size:9px;font-weight:600}
+.sb-footer{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:6px}
+.live-dot{width:5px;height:5px;background:#4ade80;border-radius:50%}
+.sb-user{padding:12px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px}
+.sb-user-ava{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.sb-user-name{font-size:11px;color:#fff;font-weight:500}
+.sb-user-role{font-size:10px;color:rgba(255,255,255,.4)}
+.sb-logout{font-size:10px;color:rgba(255,255,255,.35);cursor:pointer;margin-top:2px;text-decoration:underline}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-title{font-size:15px;font-weight:600;color:var(--text)}
+.tb-right{display:flex;align-items:center;gap:12px}
+.tb-search{padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;width:200px;outline:none;background:var(--bg3)}
+.tb-search:focus{border-color:var(--blue);background:#fff}
+.tb-date{font-size:11px;color:var(--text2)}
+
+/* ── PAGE CONTENT ── */
+.page-content{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.page{display:none}.page.active{display:flex;flex-direction:column;gap:14px}
+
+/* ── ALERT BANNER ── */
+.alert-banner{background:#fff1f0;border:1px solid #ffccc7;border-radius:var(--radius);padding:11px 16px;display:flex;align-items:center;gap:12px}
+.ab-dot{width:8px;height:8px;background:var(--red);border-radius:50%;flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ab-text{flex:1;font-size:12px;color:#a8071a;line-height:1.4}
+.ab-text b{font-weight:600}
+.ab-btn{font-size:11px;color:var(--red);border:1px solid #ffccc7;padding:5px 12px;border-radius:99px;cursor:pointer;white-space:nowrap;background:transparent;font-weight:500}
+.ab-btn:hover{background:#ffccc7}
+
+/* ── KPI CARDS ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{background:#fff;border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);border-top:3px solid transparent;cursor:pointer;transition:box-shadow .15s}
+.kpi:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.kpi-label{font-size:11px;color:var(--text2);margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px}
+.kpi-value{font-size:28px;font-weight:700;line-height:1;margin-bottom:5px}
+.kpi-sub{font-size:11px;color:var(--text3)}
+.kpi-delta{font-size:11px;font-weight:500;margin-top:3px}
+.kpi.red{border-top-color:var(--red)}.kpi.green{border-top-color:var(--teal)}
+.kpi.blue{border-top-color:var(--blue)}.kpi.amber{border-top-color:var(--amber)}
+
+/* ── GRID LAYOUTS ── */
+.g2{display:grid;grid-template-columns:3fr 2fr;gap:14px}
+.g2b{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* ── CARD ── */
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.card-head{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text3)}
+.card-link{font-size:11px;color:var(--blue);cursor:pointer;font-weight:500}
+.card-link:hover{text-decoration:underline}
+.card-body{padding:14px 16px}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl thead{position:sticky;top:0;z-index:1}
+.tbl th{background:var(--bg3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:600;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#f8f9ff}
+.tbl .shipper{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:600;white-space:nowrap}
+.ch-ok{background:#e6f4ea;color:#137333}
+.ch-late{background:#fce8e6;color:#c5221f}
+.ch-warn{background:#fef7e0;color:#b06000}
+.ch-info{background:#e8f0fe;color:#185abc}
+.ch-gray{background:#f0f2f5;color:#5f6b7a}
+.ch-ship{background:#e8f5e9;color:#2e7d32}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border)}
+.fb-input{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:#fff;outline:none;width:200px}
+.fb-input:focus{border-color:var(--blue)}
+.fb-select{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:#fff;cursor:pointer;outline:none}
+.fb-count{font-size:11px;color:var(--text2);margin-left:auto}
+
+/* ── PROGRESS BAR ── */
+.prog-wrap{margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.prog-label{font-size:11px;color:var(--text2);width:80px;flex-shrink:0}
+.prog-track{flex:1;background:var(--bg3);border-radius:99px;height:8px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .5s}
+.prog-val{font-size:11px;font-weight:600;width:36px;text-align:right;flex-shrink:0}
+
+/* ── UPCOMING LIST ── */
+.upc-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.upc-item:last-child{border-bottom:none;padding-bottom:0}
+.upc-date-box{text-align:center;min-width:40px}
+.upc-day{font-size:20px;font-weight:700;line-height:1;color:var(--text)}
+.upc-month{font-size:9px;color:var(--text2);text-transform:uppercase}
+.upc-info{flex:1}
+.upc-name{font-size:13px;font-weight:600}
+.upc-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.upc-qty{text-align:right}
+.upc-qty-val{font-size:14px;font-weight:700;color:var(--text)}
+.upc-qty-lbl{font-size:9px;color:var(--text3)}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f-full{grid-column:1/-1}
+.f-group label{display:block;font-size:11px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.f-group input,.f-group select,.f-group textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;transition:border .15s;background:#fff}
+.f-group input:focus,.f-group select:focus{border-color:var(--blue)}
+.f-group input.auto{background:#e8f0fe;border-color:#a8c4f8;color:var(--blue);font-weight:500}
+.f-note{font-size:11px;color:var(--text3);background:var(--bg3);padding:8px 12px;border-radius:var(--radius-sm);line-height:1.5;margin-top:8px}
+.btn-row{display:flex;gap:8px;margin-top:14px}
+.btn-primary{flex:1;padding:10px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
+.btn-primary:hover{background:var(--navy2)}
+.btn-sec{padding:10px 16px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer}
+.btn-success{padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg3)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:#eef3fd}
+.uz-icon{width:44px;height:44px;background:var(--blue);border-radius:10px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
+.uz-title{font-size:14px;font-weight:600;margin-bottom:5px}
+.uz-sub{font-size:12px;color:var(--text2)}
+.upload-preview{margin-top:14px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.up-head{padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:500}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;margin-bottom:4px}
+.pipe-step{flex:1;text-align:center;padding:8px 6px;font-size:10px;font-weight:500;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s}
+.pipe-step:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm)}
+.pipe-step:last-child{border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.pipe-step+.pipe-step{border-left:none}
+.pipe-step.done{background:#e6f4ea;color:#137333;border-color:#b7dfba}
+.pipe-step.current{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pipe-step:not(.done):not(.current):hover{background:var(--bg)}
+
+/* ── STAT MINI ── */
+.stat-mini{display:flex;gap:8px;margin-bottom:10px}
+.sm-item{flex:1;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 12px;text-align:center}
+.sm-val{font-size:20px;font-weight:700;line-height:1}
+.sm-lbl{font-size:10px;color:var(--text2);margin-top:3px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.3);transform:translateY(100px);opacity:0;transition:all .3s;z-index:9999}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:var(--red)}
+.toast.success{background:var(--teal2)}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text2);font-size:13px;gap:10px}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{width:0;overflow:hidden;transition:width .25s}
+  .sidebar.open{width:210px}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .g2,.g2b,.g3{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .tb-search{width:140px}
+  .tbl th:nth-child(n+6),.tbl td:nth-child(n+6){display:none}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .kpi-value{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo"><div class="login-logo-text">VIVA</div></div>
+    <div class="login-sub">Hệ thống theo dõi hàng nhập xuất nội bộ VIVA</div>
+    <div class="login-field">
+      <label>Tên đăng nhập</label>
+      <input type="text" id="loginUser" placeholder="Nhập tài khoản" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Mật khẩu</label>
+      <input type="password" id="loginPass" placeholder="Nhập mật khẩu" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Đăng nhập</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-hint">Liên hệ DAISY để được cấp tài khoản</div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ── -->
+<div class="shell hidden" id="appShell">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-name">VIVA</div>
+      <div class="sb-logo-sub">Logistics Portal 2026</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Tổng quan</div>
+      <div class="sb-item active" onclick="navTo('dashboard',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Dashboard
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Hàng nhập</div>
+      <div class="sb-item" onclick="navTo('import',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v9M5 8l3 3 3-3"/><path d="M2 13h12"/></svg>
+        Import schedule
+      </div>
+      <div class="sb-item" onclick="navTo('alerts',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2a5 5 0 015 5c0 3 1 4 1 4H2s1-1 1-4a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
+        Cảnh báo trễ
+        <span class="sb-badge" id="alertBadge" style="display:none">0</span>
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Hàng xuất</div>
+      <div class="sb-item" onclick="navTo('export',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 14V5M5 8l3-3 3 3"/><path d="M2 3h12"/></svg>
+        Loading schedule
+      </div>
+      <div class="sb-item" onclick="navTo('upcoming',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v3M11 1v3M2 7h12"/></svg>
+        Lịch xuất sắp tới
+      </div>
+    </div>
+    <div class="sb-section" id="entryNav">
+      <div class="sb-label">Nhập liệu</div>
+      <div class="sb-item" onclick="navTo('entry',this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg>
+        Upload / Nhập mới
+      </div>
+    </div>
+    <div class="sb-user" id="sbUser"></div>
+    <div class="sb-footer"><div class="live-dot"></div>Dữ liệu trực tiếp từ Google Sheets</div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onclick="toggleSidebar()" style="background:none;border:none;cursor:pointer;padding:4px;display:none" id="menuBtn">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="var(--text2)" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+        </button>
+        <div class="tb-title" id="pageTitle">Dashboard tổng quan</div>
+      </div>
+      <div class="tb-right">
+        <input class="tb-search" id="globalSearch" placeholder="Tìm shipper, bill, PO..." oninput="onGlobalSearch(this.value)">
+        <span class="tb-date" id="tbDate"></span>
+      </div>
+    </div>
+
+    <div class="page-content" id="pageContent">
+
+      <!-- ════ DASHBOARD ════ -->
+      <div class="page active" id="pg-dashboard">
+        <div class="alert-banner" id="dashAlert" style="display:none">
+          <div class="ab-dot"></div>
+          <div class="ab-text" id="dashAlertText"></div>
+          <button class="ab-btn" onclick="navTo('alerts',null)">Xem ngay →</button>
+        </div>
+        <div class="kpi-row" id="kpiRow">
+          <div class="loading"><div class="spinner"></div>Đang tải...</div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
+            <div class="card-body"><div style="position:relative;height:180px"><canvas id="monthChart" role="img" aria-label="Biểu đồ nhập hàng theo tháng"></canvas></div></div>
+            <div style="display:flex;gap:16px;padding:0 16px 14px;font-size:11px;color:var(--text2)">
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span>Đúng hạn</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span>Trễ hạn</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Xuất hàng sắp tới</div><div class="card-link" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
+            <div class="card-body" id="upcomingMini"><div class="loading"><div class="spinner"></div></div></div>
+          </div>
+        </div>
+        <div class="g2b">
+          <div class="card">
+            <div class="card-head"><div class="card-title">% Trễ theo phương thức</div><div class="card-sub">Tháng 1→3 / 2026</div></div>
+            <div class="card-body">
+              <div class="prog-wrap"><div class="prog-label">Express</div><div class="prog-track"><div class="prog-fill" style="width:87%;background:var(--red)"></div></div><div class="prog-val" style="color:var(--red)">12.5%</div></div>
+              <div class="prog-wrap"><div class="prog-label">Truck</div><div class="prog-track"><div class="prog-fill" style="width:63%;background:var(--amber)"></div></div><div class="prog-val" style="color:var(--amber)">6.3%</div></div>
+              <div class="prog-wrap"><div class="prog-label">Container</div><div class="prog-track"><div class="prog-fill" style="width:54%;background:var(--blue)"></div></div><div class="prog-val" style="color:var(--blue)">5.4%</div></div>
+              <div class="prog-wrap" style="margin:0"><div class="prog-label">CFS / XNKTC</div><div class="prog-track"><div class="prog-fill" style="width:30%;background:var(--border2)"></div></div><div class="prog-val">3.1%</div></div>
+              <div style="font-size:10px;color:var(--text3);margin-top:10px">Express trễ nhiều nhất — DHL không giao T7 & CN</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Lô nhập về kho gần đây</div><div class="card-link" onclick="navTo('import',null)">Xem tất cả</div></div>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Shipper</th><th>Về kho</th><th>Ngày</th><th>Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ IMPORT ════ -->
+      <div class="page" id="pg-import">
+        <div class="card">
+          <div class="filter-bar">
+            <input class="fb-input" placeholder="Tìm shipper, bill no, CD no..." id="impSearch" oninput="filterImport()">
+            <select class="fb-select" id="impStatus" onchange="filterImport()">
+              <option value="">Tất cả trạng thái</option>
+              <option value="OK">OK – Đúng hạn</option>
+              <option value="NOT OK">NOT OK – Trễ hạn</option>
+            </select>
+            <select class="fb-select" id="impMode" onchange="filterImport()">
+              <option value="">Tất cả mode</option>
+              <option>SEA</option><option>CPN</option><option>TRUCK</option>
+              <option>Express</option><option>AIR</option><option>XNKTC</option>
+              <option>FCL</option><option>CFS</option>
+            </select>
+            <span class="fb-count" id="impCount"></span>
+          </div>
+          <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
+            <table class="tbl">
+              <thead><tr>
+                <th>STT</th><th>Shipper</th><th>Nước</th><th>ETA</th>
+                <th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>
+                <th>Ngày XL</th><th>Trạng thái</th><th>Ghi chú</th>
+              </tr></thead>
+              <tbody id="impTbl"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ ALERTS ════ -->
+      <div class="page" id="pg-alerts">
+        <div class="alert-banner" id="alertsBanner">
+          <div class="ab-dot"></div>
+          <div class="ab-text" id="alertsBannerText">Đang tải...</div>
+        </div>
+        <div class="g2b">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Nguyên nhân trễ — Tháng 4/2026</div></div>
+            <div class="card-body">
+              <div class="prog-wrap"><div class="prog-label" style="width:130px">DHL không giao T7-CN</div><div class="prog-track"><div class="prog-fill" style="width:44%;background:var(--red)"></div></div><div class="prog-val">4 lô</div></div>
+              <div class="prog-wrap"><div class="prog-label" style="width:130px">Thông quan chậm</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 lô</div></div>
+              <div class="prog-wrap"><div class="prog-label" style="width:130px">Hàng nội địa xa</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 lô</div></div>
+              <div class="prog-wrap" style="margin:0"><div class="prog-label" style="width:130px">Mở cont CFS trễ</div><div class="prog-track"><div class="prog-fill" style="width:11%;background:var(--border2)"></div></div><div class="prog-val">1 lô</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Tỷ lệ đúng hạn theo tháng</div></div>
+            <div class="card-body">
+              <div class="prog-wrap"><div class="prog-label">Jan-26</div><div class="prog-track"><div class="prog-fill" style="width:85%;background:var(--teal)"></div></div><div class="prog-val" style="color:var(--teal)">85%</div></div>
+              <div class="prog-wrap"><div class="prog-label">Feb-26</div><div class="prog-track"><div class="prog-fill" style="width:79%;background:var(--teal)"></div></div><div class="prog-val" style="color:var(--teal)">79%</div></div>
+              <div class="prog-wrap"><div class="prog-label">Mar-26</div><div class="prog-track"><div class="prog-fill" style="width:73%;background:var(--amber)"></div></div><div class="prog-val" style="color:var(--amber)">73%</div></div>
+              <div class="prog-wrap" style="margin:0"><div class="prog-label">Apr-26</div><div class="prog-track"><div class="prog-fill" style="width:53%;background:var(--red)"></div></div><div class="prog-val" style="color:var(--red)">53%</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Danh sách lô đang trễ — cần xử lý</div><div class="card-sub">Sắp xếp theo số ngày trễ</div></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Shipper</th><th>Nước</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>Ngày trễ</th><th>Lý do</th></tr></thead>
+            <tbody id="alertTbl"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ════ EXPORT ════ -->
+      <div class="page" id="pg-export">
+        <div class="card">
+          <div class="filter-bar">
+            <input class="fb-input" placeholder="Tìm khách hàng, style, PO..." id="expSearch" oninput="filterExport()">
+            <select class="fb-select" id="expStatus" onchange="filterExport()">
+              <option value="">Tất cả trạng thái</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Booked">Booked</option>
+              <option value="Pending">Pending</option>
+            </select>
+            <span class="fb-count" id="expCount"></span>
+          </div>
+          <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
+            <table class="tbl">
+              <thead><tr>
+                <th>STT</th><th>Khách hàng</th><th>Nước NK</th><th>Factory style</th>
+                <th>PO</th><th>Số lượng PCS</th><th>Ngày xuất dự kiến</th>
+                <th>Mode</th><th>Container</th><th>Trạng thái</th>
+              </tr></thead>
+              <tbody id="expTbl"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ UPCOMING ════ -->
+      <div class="page" id="pg-upcoming">
+        <div class="card">
+          <div class="card-head"><div class="card-title">Lịch xuất hàng sắp tới — Tháng 4 → 6 / 2026</div><div class="card-sub">Chưa có ngày xuất thực tế</div></div>
+          <div class="card-body" id="upcomingFull"></div>
+        </div>
+      </div>
+
+      <!-- ════ ENTRY ════ -->
+      <div class="page" id="pg-entry">
+        <div class="g2b">
+          <!-- Upload -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Upload file Excel</div><div class="card-sub">Giữ nguyên thói quen hiện tại</div></div>
+              <div class="card-body">
+                <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
+                  ondragover="event.preventDefault();this.classList.add('drag')"
+                  ondragleave="this.classList.remove('drag')"
+                  ondrop="handleDrop(event)">
+                  <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
+                  <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
+                  <div class="uz-title">Kéo thả file .xlsx vào đây</div>
+                  <div class="uz-sub">hoặc click để chọn file<br><small>Import_schedule_2026.xlsx · LOADING_SCHEDULE_2026.xlsx</small></div>
+                </div>
+                <div id="uploadPreview" style="display:none" class="upload-preview">
+                  <div class="up-head">
+                    <span id="previewTitle">Preview</span>
+                    <button class="btn-success" onclick="submitImport()" style="padding:5px 14px;font-size:12px">Import →</button>
+                  </div>
+                  <div class="tbl-wrap"><table class="tbl" style="font-size:10px"><thead><tr id="previewHead"></tr></thead><tbody id="previewBody"></tbody></table></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pipeline status update -->
+            <div class="card">
+              <div class="card-head"><div class="card-title">Cập nhật trạng thái nhanh</div><div class="card-sub">Bấm vào bước tiếp theo</div></div>
+              <div class="card-body">
+                <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Tìm lô hàng cần cập nhật:</div>
+                <input class="fb-input" style="width:100%;margin-bottom:12px" placeholder="Nhập tên shipper hoặc ID lô hàng..." id="pipeSearch" oninput="searchForPipeline(this.value)">
+                <div id="pipelineResult"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form nhập mới -->
+          <div class="card">
+            <div class="card-head"><div class="card-title">Thêm lô nhập mới</div><span class="chip ch-ok">6 trường bắt buộc</span></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="f-group"><label>Shipper *</label><input type="text" id="f_shipper" list="shipperList" placeholder="Gõ để tìm..."><datalist id="shipperList"></datalist></div>
+                <div class="f-group"><label>Nước xuất xứ *</label><input type="text" id="f_country" placeholder="CN, VN, JP..."></div>
+                <div class="f-group"><label>ETA (ngày tàu/xe đến) *</label><input type="date" id="f_eta" onchange="recalcDays()"></div>
+                <div class="f-group"><label>Phương thức *</label>
+                  <select id="f_mode" onchange="updateTarget()">
+                    <option value="">Chọn mode...</option>
+                    <option value="FCL">FCL – Container</option><option value="CFS">CFS</option>
+                    <option value="TRUCK">TRUCK</option><option value="Express">Express / DHL</option>
+                    <option value="AIR">AIR</option><option value="XNKTC">XNKTC</option><option value="CPN">CPN</option>
+                  </select>
+                </div>
+                <div class="f-group"><label>Số kiện *</label><input type="number" id="f_packages" min="0" placeholder="0"></div>
+                <div class="f-group"><label>Cân nặng (kg) *</label><input type="number" id="f_weight" step="0.1" placeholder="0.0"></div>
+                <div class="f-group"><label>Ngày về kho thực tế *</label><input type="date" id="f_arrival" onchange="recalcDays()"></div>
+                <div class="f-group"><label>Số ngày xử lý</label><input class="auto" type="text" id="f_days" readonly></div>
+                <div class="f-group"><label>Target (ngày)</label><input class="auto" type="text" id="f_target" readonly></div>
+                <div class="f-group"><label>Trạng thái</label><input class="auto" type="text" id="f_status" readonly></div>
+                <div class="f-group f-full"><label>Lý do trễ (nếu NOT OK)</label><input type="text" id="f_reasons" placeholder="DHL không giao T7, chờ thông quan..."></div>
+                <div class="f-group"><label>Shipper country</label><input type="text" id="f_vessel" placeholder="Tên tàu / chuyến xe"></div>
+                <div class="f-group"><label>CD No</label><input type="text" id="f_cdno" placeholder="1078..."></div>
+                <div class="f-group"><label>Bill No</label><input type="text" id="f_billno" placeholder="JJCN..."></div>
+                <div class="f-group"><label>Forwarder</label><input type="text" id="f_forwarder" placeholder="OCEAN, DHL, Overland..."></div>
+              </div>
+              <div class="btn-row">
+                <button class="btn-sec" onclick="clearForm()">Xoá form</button>
+                <button class="btn-primary" onclick="submitNewImport()">Lưu & Cập nhật</button>
+              </div>
+              <div class="f-note">Chỉ 6 trường đầu là bắt buộc. Các trường còn lại có thể điền sau. Số ngày và trạng thái tự tính khi điền đủ ETA và Ngày về kho.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CẤU HÌNH — thay URL sau khi deploy Apps Script
+// ══════════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbxFrb5TuGnSJjNTvOYJCyze2LXoNzHQxUD6l9RhphOcqJjCBS_ZDFCAGY3yIae77DOtBA/exec';
+
+// ══ STATE ══
+let session = JSON.parse(localStorage.getItem('viva_session') || 'null');
+let importData = [], exportData = [], pendingImportRows = [];
+let monthChart = null;
+
+// ══ INIT ══
+document.addEventListener('DOMContentLoaded', () => {
+  updateDate();
+  if (session?.token) bootApp();
+  // Responsive: show menu button on mobile
+  if (window.innerWidth <= 768) document.getElementById('menuBtn').style.display = 'block';
+  window.addEventListener('resize', () => {
+    document.getElementById('menuBtn').style.display = window.innerWidth <= 768 ? 'block' : 'none';
+  });
+});
+
+function updateDate() {
+  const d = new Date();
+  const days = ['CN','T2','T3','T4','T5','T6','T7'];
+  document.getElementById('tbDate').textContent =
+    days[d.getDay()] + ' ' + d.getDate().toString().padStart(2,'0') +
+    '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+}
+
+// ══ AUTH ══
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  if (!u || !p) { document.getElementById('loginErr').textContent = 'Vui lòng điền đầy đủ'; return; }
+  document.getElementById('loginErr').textContent = '';
+
+  try {
+    const res = await api('login', { username: u, password: p }, 'GET', false);
+    session = res;
+    localStorage.setItem('viva_session', JSON.stringify(session));
+    bootApp();
+  } catch (e) {
+    document.getElementById('loginErr').textContent = e.message || 'Đăng nhập thất bại';
+  }
+}
+
+function bootApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').classList.remove('hidden');
+  renderUserInfo();
+  if (session.role === 'KHO') document.getElementById('entryNav').style.display = 'none';
+  loadDashboard();
+  loadImports();
+  loadExports();
+}
+
+function renderUserInfo() {
+  const initials = (session.fullName || session.username || 'VV').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('sbUser').innerHTML = `
+    <div class="sb-user-ava">${initials}</div>
+    <div><div class="sb-user-name">${session.fullName || session.username}</div>
+    <div class="sb-user-role">${{GD:'Ban Giám đốc',TP:'Trưởng bộ phận',NV:'Nhân viên',KHO:'Kho'}[session.role]||session.role}</div>
+    <div class="sb-logout" onclick="logout()">Đăng xuất</div></div>`;
+}
+
+function logout() {
+  localStorage.removeItem('viva_session');
+  session = null;
+  document.getElementById('appShell').classList.add('hidden');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPass').value = '';
+}
+
+// ══ NAV ══
+const pageTitles = {
+  dashboard:'Dashboard tổng quan', import:'Import Schedule — Lịch hàng nhập',
+  alerts:'Cảnh báo lô hàng trễ', export:'Loading Schedule — Lịch hàng xuất',
+  upcoming:'Lịch xuất hàng sắp tới', entry:'Nhập liệu / Upload Excel',
+};
+
+function navTo(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('pg-' + id).classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[id] || id;
+  if (el) el.classList.add('active');
+  if (id === 'upcoming') renderUpcoming();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ══ API ══
+async function api(action, params = {}, method = 'GET', auth = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  let url = API_URL + '?action=' + action;
+  if (auth && session?.token) url += '&token=' + encodeURIComponent(session.token);
+
+  let opts = { method, headers };
+  if (method === 'GET') {
+    Object.entries(params).forEach(([k,v]) => { url += '&' + k + '=' + encodeURIComponent(v); });
+  } else {
+    if (auth && session?.token) params.token = session.token;
+    opts.body = JSON.stringify({ action, ...params });
+  }
+
+  const res  = await fetch(url, opts);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'API error');
+  return json.data;
+}
+
+// ══ DASHBOARD ══
+async function loadDashboard() {
+  try {
+    const data = await api('getDashboard');
+    renderKPI(data.kpi);
+    renderAlerts(data.activeAlerts);
+    renderChart(data.byMonth);
+    renderUpcomingMini(data.upcoming);
+    renderRecentImports();
+  } catch (e) {
+    // Fallback: dùng dữ liệu mẫu khi chưa có API
+    renderKPIFallback();
+  }
+}
+
+function renderKPI(kpi) {
+  if (!kpi) return renderKPIFallback();
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi red" onclick="navTo('alerts',null)">
+      <div class="kpi-label">Lô đang trễ</div>
+      <div class="kpi-value" style="color:var(--red)">${kpi.totalLate}</div>
+      <div class="kpi-sub">/ ${kpi.total} tổng lô</div>
+      <div class="kpi-delta" style="color:var(--red)">Tháng này</div>
+    </div>
+    <div class="kpi green" onclick="navTo('import',null)">
+      <div class="kpi-label">Tỷ lệ đúng hạn</div>
+      <div class="kpi-value" style="color:var(--teal)">${kpi.rate}%</div>
+      <div class="kpi-sub">${kpi.totalOK} / ${kpi.total} lô</div>
+      <div class="kpi-delta" style="color:${kpi.rate>=75?'var(--teal)':'var(--red)'}">Tháng này</div>
+    </div>
+    <div class="kpi blue" onclick="navTo('import',null)">
+      <div class="kpi-label">Tổng lô nhập 2026</div>
+      <div class="kpi-value" style="color:var(--blue)">${kpi.total}</div>
+      <div class="kpi-sub">${kpi.totalOK} OK · ${kpi.totalLate} NOT OK</div>
+    </div>
+    <div class="kpi amber" onclick="navTo('upcoming',null)">
+      <div class="kpi-label">Xuất hàng sắp tới</div>
+      <div class="kpi-value" style="color:var(--amber)" id="upcomingCount">–</div>
+      <div class="kpi-sub">Trong 14 ngày tới</div>
+    </div>`;
+}
+
+function renderKPIFallback() {
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi red"><div class="kpi-label">Lô đang trễ</div><div class="kpi-value" style="color:var(--red)">9</div><div class="kpi-sub">/ 62 tháng 4</div></div>
+    <div class="kpi green"><div class="kpi-label">Tỷ lệ đúng hạn</div><div class="kpi-value" style="color:var(--teal)">74%</div><div class="kpi-sub">273 / 369 lô</div></div>
+    <div class="kpi blue"><div class="kpi-label">Tổng lô nhập</div><div class="kpi-value" style="color:var(--blue)">369</div><div class="kpi-sub">Dec-25 → Apr-26</div></div>
+    <div class="kpi amber"><div class="kpi-label">Xuất sắp tới</div><div class="kpi-value" style="color:var(--amber)">3</div><div class="kpi-sub">Trong 14 ngày</div></div>`;
+}
+
+function renderAlerts(alerts) {
+  if (!alerts?.length) return;
+  const banner = document.getElementById('dashAlert');
+  banner.style.display = 'flex';
+  document.getElementById('dashAlertText').innerHTML =
+    `<b>${alerts.length} lô nhập đang trễ hạn</b> — ` +
+    alerts.slice(0,3).map(a => a.shipper + ' (' + a.daysSince + ' ngày)').join(' · ') +
+    (alerts.length > 3 ? ` và ${alerts.length-3} lô khác` : '');
+  document.getElementById('alertBadge').textContent = alerts.length;
+  document.getElementById('alertBadge').style.display = 'inline';
+  // Alert page table
+  document.getElementById('alertsBannerText').innerHTML = `<b>${alerts.length} lô trễ hạn</b> — cần kiểm tra và cập nhật trạng thái`;
+  document.getElementById('alertTbl').innerHTML = alerts.map(a => `<tr>
+    <td class="shipper">${a.shipper}</td>
+    <td>${a.country}</td><td>${a.eta}</td>
+    <td><span class="chip ch-info">${a.mode}</span></td>
+    <td>${a.packages}</td>
+    <td style="font-weight:600;color:var(--red)">${a.daysSince} ngày</td>
+    <td style="font-size:10px;color:var(--text2)">${a.reasons||'–'}</td>
+  </tr>`).join('');
+}
+
+function renderChart(byMonth) {
+  if (!byMonth?.length) return;
+  if (monthChart) monthChart.destroy();
+  monthChart = new Chart(document.getElementById('monthChart'), {
+    type:'bar',
+    data:{
+      labels: byMonth.map(m => m.label),
+      datasets:[
+        {label:'OK', data:byMonth.map(m=>m.ok),   backgroundColor:'#0EA47A', borderRadius:4},
+        {label:'Late',data:byMonth.map(m=>m.late), backgroundColor:'#D94040', borderRadius:4},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},
+              y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}}}}
+  });
+}
+
+function renderUpcomingMini(items) {
+  if (!items?.length) { document.getElementById('upcomingMini').innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0">Không có lô xuất nào sắp tới</div>'; return; }
+  const el = document.getElementById('upcomingMini');
+  if (document.getElementById('upcomingCount')) document.getElementById('upcomingCount').textContent = items.length;
+  el.innerHTML = items.slice(0,5).map(d => {
+    const parts = d.plannedDate.split('/');
+    return `<div class="upc-item">
+      <div class="upc-date-box"><div class="upc-day">${parts[0]||''}</div><div class="upc-month">Th.${parts[1]||''}</div></div>
+      <div class="upc-info"><div class="upc-name">${d.customer} — ${d.country}</div><div class="upc-meta">${d.style} · ${d.transport||'Sea'} · PO ${d.po||'–'}</div></div>
+      <div class="upc-qty"><div class="upc-qty-val">${Number(d.qty||0).toLocaleString()}</div><div class="upc-qty-lbl">PCS</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderRecentImports() {
+  const recent = importData.filter(r => r.arrival).slice(-8).reverse();
+  if (!recent.length) return;
+  document.getElementById('recentImpTbl').innerHTML = recent.map(r => `<tr>
+    <td class="shipper">${r.shipper}</td>
+    <td>${r.arrival}</td>
+    <td style="font-weight:600;color:${r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.days}</td>
+    <td><span class="chip ${r.status==='OK'?'ch-ok':'ch-late'}">${r.status}</span></td>
+  </tr>`).join('');
+}
+
+// ══ IMPORTS ══
+async function loadImports() {
+  try {
+    const data = await api('getImports');
+    importData = data.rows || [];
+  } catch(e) { importData = []; }
+  filterImport();
+  populateShipperList();
+}
+
+function filterImport() {
+  const q   = (document.getElementById('impSearch')?.value||'').toLowerCase();
+  const st  = document.getElementById('impStatus')?.value||'';
+  const md  = document.getElementById('impMode')?.value||'';
+
+  const filtered = importData.filter(r =>
+    (!q  || [r.shipper,r.billNo,r.cdNo].some(v=>(v||'').toLowerCase().includes(q))) &&
+    (!st || r.status === st) &&
+    (!md || r.shipMode === md)
+  );
+
+  document.getElementById('impCount').textContent = `Hiển thị ${filtered.length} / ${importData.length} lô`;
+  document.getElementById('impTbl').innerHTML = filtered.map((r,i) => `<tr>
+    <td>${i+1}</td>
+    <td class="shipper" title="${r.shipper}">${r.shipper}</td>
+    <td>${r.country}</td><td>${r.eta}</td>
+    <td><span class="chip ch-info">${r.shipMode||'–'}</span></td>
+    <td style="text-align:right">${r.packages||0}</td>
+    <td style="text-align:right">${Number(r.weight||0).toLocaleString()}</td>
+    <td>${r.arrival||'–'}</td>
+    <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
+    <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${r.status||'–'}</span></td>
+    <td style="font-size:10px;color:var(--text3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
+  </tr>`).join('') || '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>';
+}
+
+// ══ EXPORTS ══
+async function loadExports() {
+  try {
+    const data = await api('getExports');
+    exportData = data.rows || [];
+  } catch(e) { exportData = []; }
+  filterExport();
+  renderUpcoming();
+}
+
+function filterExport() {
+  const q  = (document.getElementById('expSearch')?.value||'').toLowerCase();
+  const st = document.getElementById('expStatus')?.value||'';
+  const filtered = exportData.filter(r =>
+    (!q  || [r.customer,r.style,r.po].some(v=>(v||'').toLowerCase().includes(q))) &&
+    (!st || r.status === st)
+  );
+  document.getElementById('expCount').textContent = `Hiển thị ${filtered.length} / ${exportData.length} lô`;
+  document.getElementById('expTbl').innerHTML = filtered.map((r,i) => `<tr>
+    <td>${i+1}</td>
+    <td style="font-weight:600">${r.customer}</td>
+    <td>${r.country}</td>
+    <td style="font-size:10px">${r.style}</td>
+    <td style="font-size:10px">${r.po||'–'}</td>
+    <td style="text-align:right;font-weight:600">${Number(r.qty||0).toLocaleString()}</td>
+    <td>${r.plannedDate||'–'}</td>
+    <td><span class="chip ch-info">${r.transport||'–'}</span></td>
+    <td style="font-size:10px">${r.container||'–'}</td>
+    <td><span class="chip ${r.status==='Shipped'?'ch-ship':r.status==='Booked'?'ch-ok':'ch-warn'}">${r.status||'–'}</span></td>
+  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>';
+}
+
+function renderUpcoming() {
+  const now = new Date();
+  const items = exportData.filter(r => r.customer && !r.actualDate && r.plannedDate).sort((a,b)=>new Date(a.plannedDate)-new Date(b.plannedDate));
+  let curMonth = '';
+  document.getElementById('upcomingFull').innerHTML = items.map(d => {
+    const pd    = d.plannedDate || '';
+    const parts = pd.split('/');
+    const mLabel = 'Tháng ' + (parts[1]||'') + '/' + (parts[2]||'');
+    let header = '';
+    if (mLabel !== curMonth) { curMonth = mLabel; header = `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:12px 0 6px;margin-top:4px">${mLabel}</div>`; }
+    return header + `<div class="upc-item">
+      <div class="upc-date-box"><div class="upc-day">${parts[0]||'–'}</div><div class="upc-month">Th.${parts[1]||''}</div></div>
+      <div class="upc-info"><div class="upc-name">${d.customer} — ${d.country}</div><div class="upc-meta">${d.style} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div></div>
+      <div class="upc-qty"><div class="upc-qty-val">${Number(d.qty||0).toLocaleString()}</div><div class="upc-qty-lbl">PCS</div></div>
+    </div>`;
+  }).join('') || '<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">Không có lô xuất nào sắp tới</div>';
+}
+
+// ══ UPLOAD EXCEL ══
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb  = XLSX.read(e.target.result, { type:'array', cellDates:true });
+    const sheetName = wb.SheetNames.find(n => n !== 'Kangatang') || wb.SheetNames[wb.SheetNames.length-1];
+    const ws  = wb.Sheets[sheetName];
+    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    // Tìm hàng header (hàng có "SHIPPER")
+    let headerIdx = raw.findIndex(r => r.some(c => String(c).includes('SHIPPER') || String(c).includes('Shipper')));
+    if (headerIdx === -1) headerIdx = 0;
+    const headers = raw[headerIdx];
+    const rows    = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
+
+    // Map cột theo tên
+    const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
+    pendingImportRows = rows.map(r => ({
+      shipper   : r[idx('SHIPPER')]    || '',
+      country   : r[idx('COUNTRY')]   || '',
+      etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
+      eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
+      vessel    : r[idx('VESSEL')]    || '',
+      cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
+      billNo    : r[idx('BILL')]      || '',
+      packages  : r[idx('PACKAGE')]   || 0,
+      weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
+      arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
+      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
+      goodsType : r[idx('GOODS')]     || '',
+      invNo     : r[idx('INV')]       || '',
+      forwarder : r[idx('FORWARD')]   || '',
+      reasons   : r[idx('REASON')]    || '',
+    })).filter(r => r.shipper);
+
+    // Show preview
+    document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô`;
+    document.getElementById('previewHead').innerHTML = '<th>Shipper</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>';
+    document.getElementById('previewBody').innerHTML = pendingImportRows.slice(0,5).map(r => `<tr>
+      <td>${r.shipper}</td><td>${r.eta}</td><td>${r.shipMode}</td>
+      <td>${r.packages}</td><td>${r.weight}</td><td>${r.arrival||'–'}</td>
+    </tr>`).join('');
+    document.getElementById('uploadPreview').style.display = 'block';
+    showToast(`Đã đọc ${pendingImportRows.length} lô — kiểm tra và bấm Import`);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function submitImport() {
+  if (!pendingImportRows.length) return;
+  try {
+    const res = await api('importExcel', { rows: pendingImportRows }, 'POST');
+    showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
+    document.getElementById('uploadPreview').style.display = 'none';
+    pendingImportRows = [];
+    loadImports();
+  } catch(e) { showToast('Lỗi import: ' + e.message, 'error'); }
+}
+
+function formatExcelDate(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().split('T')[0];
+  if (typeof val === 'number') {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return d.toISOString().split('T')[0];
+  }
+  return String(val);
+}
+
+// ══ FORM NHẬP MỚI ══
+const targets = {FCL:3,CFS:5,TRUCK:5,Express:3,AIR:2,XNKTC:3,CPN:5};
+
+function updateTarget() {
+  const mode = document.getElementById('f_mode').value;
+  document.getElementById('f_target').value = mode ? (targets[mode] || 5) + ' ngày' : '';
+  recalcDays();
+}
+
+function recalcDays() {
+  const eta  = document.getElementById('f_eta').value;
+  const arr  = document.getElementById('f_arrival').value;
+  const mode = document.getElementById('f_mode').value;
+  if (!eta || !arr) { document.getElementById('f_days').value = ''; document.getElementById('f_status').value = ''; return; }
+  const days   = calcWD(new Date(eta), new Date(arr));
+  const target = targets[mode] || 5;
+  document.getElementById('f_days').value   = days + ' ngày';
+  document.getElementById('f_status').value = days <= target ? 'OK ✓' : 'NOT OK — Trễ ' + (days-target) + ' ngày';
+  document.getElementById('f_status').style.background = days <= target ? '#e6f4ea' : '#fce8e6';
+  document.getElementById('f_status').style.color      = days <= target ? '#137333' : '#c5221f';
+}
+
+function calcWD(from, to) {
+  let n = 0; const d = new Date(from);
+  while (d < to) { const w = d.getDay(); if (w!==0&&w!==6) n++; d.setDate(d.getDate()+1); }
+  return n;
+}
+
+async function submitNewImport() {
+  const shipper = document.getElementById('f_shipper').value.trim();
+  const eta     = document.getElementById('f_eta').value;
+  const mode    = document.getElementById('f_mode').value;
+  const pkgs    = document.getElementById('f_packages').value;
+  const kg      = document.getElementById('f_weight').value;
+  const arr     = document.getElementById('f_arrival').value;
+  if (!shipper||!eta||!mode||!pkgs||!kg||!arr) { showToast('Vui lòng điền đủ 6 trường bắt buộc','error'); return; }
+  try {
+    const res = await api('addImport', {
+      shipper, country:document.getElementById('f_country').value,
+      eta, arrival:arr, shipMode:mode, packages:pkgs, weight:kg,
+      vessel:document.getElementById('f_vessel').value,
+      cdNo:document.getElementById('f_cdno').value,
+      billNo:document.getElementById('f_billno').value,
+      forwarder:document.getElementById('f_forwarder').value,
+      reasons:document.getElementById('f_reasons').value,
+    }, 'POST');
+    showToast(`✓ Đã thêm lô ${res.id} — Trạng thái: ${res.status}`, 'success');
+    clearForm(); loadImports();
+  } catch(e) { showToast('Lỗi: ' + e.message, 'error'); }
+}
+
+function clearForm() {
+  ['f_shipper','f_country','f_eta','f_arrival','f_vessel','f_cdno','f_billno','f_forwarder','f_reasons'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('f_mode').value = '';
+  document.getElementById('f_packages').value = '';
+  document.getElementById('f_weight').value = '';
+  document.getElementById('f_days').value = '';
+  document.getElementById('f_target').value = '';
+  document.getElementById('f_status').value = '';
+}
+
+function populateShipperList() {
+  const names = [...new Set(importData.map(r=>r.shipper).filter(Boolean))].sort();
+  document.getElementById('shipperList').innerHTML = names.map(n => `<option value="${n}">`).join('');
+}
+
+// ══ PIPELINE SEARCH ══
+function searchForPipeline(q) {
+  const el = document.getElementById('pipelineResult');
+  if (!q || q.length < 2) { el.innerHTML=''; return; }
+  const found = importData.filter(r => (r.shipper||'').toLowerCase().includes(q.toLowerCase()) || r.id === q).slice(0,3);
+  el.innerHTML = found.map(r => {
+    const curStep = r.arrival ? 3 : 2;
+    return `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">${r.shipper} <span style="font-size:10px;color:var(--text3);font-weight:400">${r.id}</span></div>
+      <div class="pipeline">
+        <div class="pipe-step done">Khai báo HQ</div>
+        <div class="pipe-step done">Thông quan</div>
+        <div class="pipe-step ${curStep>=2?'done':'current'}">Đang vận chuyển</div>
+        <div class="pipe-step ${r.arrival?'done':''}" onclick="markArrived('${r.id}')">Đã về kho ${r.arrival?'✓':''}</div>
+      </div>
+      ${!r.arrival ? `<div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <input type="date" id="arrDate_${r.id}" value="${new Date().toISOString().split('T')[0]}" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <button onclick="markArrived('${r.id}')" style="padding:5px 12px;background:var(--teal);color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer">Xác nhận về kho</button>
+      </div>` : `<div style="font-size:11px;color:var(--teal);margin-top:4px">✓ Đã về kho: ${r.arrival} — ${r.days} ngày — ${r.status}</div>`}
+    </div>`;
+  }).join('') || '<div style="color:var(--text3);font-size:12px">Không tìm thấy lô hàng</div>';
+}
+
+async function markArrived(id) {
+  const input = document.getElementById('arrDate_' + id);
+  const date  = input ? input.value : new Date().toISOString().split('T')[0];
+  try {
+    await api('updateArrival', { recordId: id, arrivalDate: date }, 'POST');
+    showToast('✓ Đã cập nhật ngày về kho', 'success');
+    await loadImports();
+    searchForPipeline(document.getElementById('pipeSearch').value);
+  } catch(e) { showToast('Lỗi: ' + e.message, 'error'); }
+}
+
+// ══ GLOBAL SEARCH ══
+function onGlobalSearch(q) {
+  if (!q) return;
+  // Switch to import page and filter
+  navTo('import', document.querySelectorAll('.sb-item')[1]);
+  document.getElementById('impSearch').value = q;
+  filterImport();
+}
+
+// ══ TOAST ══
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
