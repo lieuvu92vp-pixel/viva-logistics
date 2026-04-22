@@ -248,44 +248,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-logo-sub">Logistics Portal 2026</div>
     </div>
     <div class="sb-section">
-      <div class="sb-label">Tổng quan</div>
+      <div class="sb-label" data-vi="Tổng quan" data-en="Overview">Tổng quan</div>
       <div class="sb-item active" onclick="navTo('dashboard',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-        Dashboard
+        <span data-vi="Dashboard" data-en="Dashboard">Dashboard</span>
       </div>
     </div>
     <div class="sb-section">
-      <div class="sb-label">Hàng nhập</div>
+      <div class="sb-label" data-vi="Hàng nhập" data-en="Imports">Hàng nhập</div>
       <div class="sb-item" onclick="navTo('import',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v9M5 8l3 3 3-3"/><path d="M2 13h12"/></svg>
-        Import schedule
+        <span data-vi="Import schedule" data-en="Import schedule">Import schedule</span>
       </div>
       <div class="sb-item" onclick="navTo('alerts',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2a5 5 0 015 5c0 3 1 4 1 4H2s1-1 1-4a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
-        Cảnh báo trễ
+        <span data-vi="Cảnh báo trễ" data-en="Late alerts">Cảnh báo trễ</span>
         <span class="sb-badge" id="alertBadge" style="display:none">0</span>
       </div>
     </div>
     <div class="sb-section">
-      <div class="sb-label">Hàng xuất</div>
+      <div class="sb-label" data-vi="Hàng xuất" data-en="Exports">Hàng xuất</div>
       <div class="sb-item" onclick="navTo('export',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 14V5M5 8l3-3 3 3"/><path d="M2 3h12"/></svg>
-        Loading schedule
+        <span data-vi="Loading schedule" data-en="Loading schedule">Loading schedule</span>
       </div>
       <div class="sb-item" onclick="navTo('upcoming',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v3M11 1v3M2 7h12"/></svg>
-        Lịch xuất sắp tới
+        <span data-vi="Lịch xuất sắp tới" data-en="Upcoming exports">Lịch xuất sắp tới</span>
       </div>
     </div>
     <div class="sb-section" id="entryNav">
-      <div class="sb-label">Nhập liệu</div>
+      <div class="sb-label" data-vi="Nhập liệu" data-en="Data Entry">Nhập liệu</div>
       <div class="sb-item" onclick="navTo('entry',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg>
-        Upload / Nhập mới
+        <span data-vi="Upload / Nhập mới" data-en="Upload / New entry">Upload / Nhập mới</span>
       </div>
     </div>
     <div class="sb-user" id="sbUser"></div>
-    <div class="sb-footer"><div class="live-dot"></div>Dữ liệu trực tiếp từ Google Sheets</div>
+    <div class="sb-footer"><div class="live-dot"></div><span data-vi="Dữ liệu trực tiếp từ Google Sheets" data-en="Live data from Google Sheets">Dữ liệu trực tiếp từ Google Sheets</span></div>
   </div>
 
   <!-- Main -->
@@ -298,7 +298,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="tb-title" id="pageTitle">Dashboard tổng quan</div>
       </div>
       <div class="tb-right">
-        <input class="tb-search" id="globalSearch" placeholder="Tìm shipper, bill, PO..." oninput="onGlobalSearch(this.value)">
+        <input class="tb-search" id="globalSearch" placeholder="Tìm shipper, bill, PO..." oninput="onGlobalSearch(this.value)" data-vi="Tìm shipper, bill, PO..." data-en="Search shipper, bill, PO...">
         <button id="langBtn" onclick="toggleLang()" style="padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-weight:600;background:#fff;cursor:pointer;color:var(--navy)">EN</button>
         <span class="tb-date" id="tbDate"></span>
       </div>
@@ -318,7 +318,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <div class="g2">
           <div class="card">
-            <div class="card-head"><div class="card-title">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
+            <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
             <div class="card-body"><div style="position:relative;height:180px"><canvas id="monthChart" role="img" aria-label="Biểu đồ nhập hàng theo tháng"></canvas></div></div>
             <div style="display:flex;gap:16px;padding:0 16px 14px;font-size:11px;color:var(--text2)">
               <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span>Đúng hạn</span>
@@ -326,13 +326,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
           </div>
           <div class="card">
-            <div class="card-head"><div class="card-title">Xuất hàng sắp tới</div><div class="card-link" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
+            <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
             <div class="card-body" id="upcomingMini"><div class="loading"><div class="spinner"></div></div></div>
           </div>
         </div>
         <div class="g2b">
           <div class="card">
-            <div class="card-head"><div class="card-title">% Trễ theo phương thức</div><div class="card-sub">Tháng 1→3 / 2026</div></div>
+            <div class="card-head"><div class="card-title" id="ct-laterate">% Trễ theo phương thức</div><div class="card-sub" data-vi="Tháng 1→3 / 2026" data-en="Jan→Mar / 2026">Tháng 1→3 / 2026</div></div>
             <div class="card-body">
               <div class="prog-wrap"><div class="prog-label">Express</div><div class="prog-track"><div class="prog-fill" style="width:87%;background:var(--red)"></div></div><div class="prog-val" style="color:var(--red)">12.5%</div></div>
               <div class="prog-wrap"><div class="prog-label">Truck</div><div class="prog-track"><div class="prog-fill" style="width:63%;background:var(--amber)"></div></div><div class="prog-val" style="color:var(--amber)">6.3%</div></div>
@@ -342,7 +342,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
           </div>
           <div class="card">
-            <div class="card-head"><div class="card-title">Lô nhập về kho gần đây</div><div class="card-link" onclick="navTo('import',null)">Xem tất cả</div></div>
+            <div class="card-head"><div class="card-title" id="ct-recent">Lô nhập về kho gần đây</div><div class="card-link" onclick="navTo('import',null)">Xem tất cả</div></div>
             <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Shipper</th><th>Về kho</th><th>Ngày</th><th>Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
           </div>
         </div>
@@ -368,7 +368,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
           <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
             <table class="tbl">
-              <thead><tr>
+              <thead id="th-import"><tr>
                 <th>STT</th><th>Shipper</th><th>Nước</th><th>ETA</th>
                 <th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>
                 <th>Ngày XL</th><th>Trạng thái</th><th>Ghi chú</th>
@@ -408,7 +408,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <div class="card-head"><div class="card-title">Danh sách lô đang trễ — cần xử lý</div><div class="card-sub">Sắp xếp theo số ngày trễ</div></div>
           <div class="tbl-wrap"><table class="tbl">
-            <thead><tr><th>Shipper</th><th>Nước</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>Ngày trễ</th><th>Lý do</th></tr></thead>
+            <thead id="th-alerts"><tr><th>Shipper</th><th>Nước</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>Ngày trễ</th><th>Lý do</th></tr></thead>
             <tbody id="alertTbl"></tbody>
           </table></div>
         </div>
@@ -429,7 +429,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
           <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
             <table class="tbl">
-              <thead><tr>
+              <thead id="th-export"><tr>
                 <th>STT</th><th>Khách hàng</th><th>Nước NK</th><th>Factory style</th>
                 <th>PO</th><th>Số lượng PCS</th><th>Ngày xuất dự kiến</th>
                 <th>Mode</th><th>Container</th><th>Trạng thái</th>
@@ -562,14 +562,141 @@ const LANG = {
 let currentLang = localStorage.getItem('viva_lang') || 'vi';
 const t = () => LANG[currentLang];
 
+function applyLang() {
+  const L = t();
+  const isEN = currentLang === 'en';
+
+  // 1. Tất cả element có data-vi / data-en
+  document.querySelectorAll('[data-vi]').forEach(el => {
+    const target = isEN ? el.dataset.en : el.dataset.vi;
+    if (!target) return;
+    // Input placeholder
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.placeholder = target;
+    } else {
+      // Chỉ đổi text node đầu tiên, giữ nguyên child elements (badge, svg...)
+      const firstText = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+      if (firstText) firstText.textContent = target;
+      else if (!el.querySelector('svg,span,div')) el.textContent = target;
+    }
+  });
+
+  // 2. Page title
+  const activePageId = document.querySelector('.page.active')?.id?.replace('pg-','');
+  if (activePageId) document.getElementById('pageTitle').textContent = L[activePageId] || '';
+
+  // 3. Dashboard card titles
+  const cardTitles = {
+    'ct-monthly'   : {vi:'Tiến độ nhập hàng theo tháng', en:'Monthly import progress'},
+    'ct-upcoming'  : {vi:'Xuất hàng sắp tới',            en:'Upcoming exports'},
+    'ct-laterate'  : {vi:'% Trễ theo phương thức',        en:'Late rate by transport mode'},
+    'ct-recent'    : {vi:'Lô nhập về kho gần đây',        en:'Recent imports'},
+    'ct-alertbanner':{vi:'Nguyên nhân trễ — Tháng này',   en:'Late reasons — This month'},
+    'ct-ontimerate': {vi:'Tỷ lệ đúng hạn theo tháng',     en:'On-time rate by month'},
+    'ct-alertlist' : {vi:'Danh sách lô đang trễ — cần xử lý', en:'Late shipments — action needed'},
+    'ct-expoverview':{vi:'Lịch xuất sắp tới — Tháng này', en:'Upcoming exports — This month'},
+    'ct-upload'    : {vi:'Upload file Excel',              en:'Upload Excel file'},
+    'ct-pipeline'  : {vi:'Cập nhật trạng thái nhanh',      en:'Quick status update'},
+    'ct-newentry'  : {vi:'Thêm lô nhập mới',               en:'Add new import'},
+  };
+  Object.entries(cardTitles).forEach(([id, texts]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = isEN ? texts.en : texts.vi;
+  });
+
+  // 4. Table headers
+  const tblHeaders = {
+    'th-import': {
+      vi: ['STT','Shipper','Nước','ETA','Mode','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'],
+      en: ['No.','Shipper','Country','ETA','Mode','Pkgs','KG','Arrival','Days','Status','Note'],
+    },
+    'th-export': {
+      vi: ['STT','Khách hàng','Nước NK','Factory style','PO','Số lượng PCS','Ngày xuất dự kiến','Mode','Container','Trạng thái'],
+      en: ['No.','Customer','Export country','Factory style','PO','Qty PCS','Planned date','Mode','Container','Status'],
+    },
+    'th-alerts': {
+      vi: ['Shipper','Nước','ETA','Mode','Kiện','Ngày trễ','Lý do'],
+      en: ['Shipper','Country','ETA','Mode','Pkgs','Days late','Reason'],
+    },
+  };
+  Object.entries(tblHeaders).forEach(([id, hdrs]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const row = el.querySelector('tr');
+    if (!row) return;
+    const cells = row.querySelectorAll('th');
+    const texts = isEN ? hdrs.en : hdrs.vi;
+    cells.forEach((th, i) => { if (texts[i]) th.textContent = texts[i]; });
+  });
+
+  // 5. Filter dropdowns
+  const impStatusSel = document.getElementById('impStatus');
+  if (impStatusSel) {
+    impStatusSel.options[0].text = isEN ? 'All statuses' : 'Tất cả trạng thái';
+    impStatusSel.options[1].text = isEN ? 'OK – On time'  : 'OK – Đúng hạn';
+    impStatusSel.options[2].text = isEN ? 'NOT OK – Late' : 'NOT OK – Trễ hạn';
+  }
+  const expStatusSel = document.getElementById('expStatus');
+  if (expStatusSel) {
+    expStatusSel.options[0].text = isEN ? 'All statuses' : 'Tất cả trạng thái';
+  }
+  const impModeSel = document.getElementById('impMode');
+  if (impModeSel) impModeSel.options[0].text = isEN ? 'All modes' : 'Tất cả mode';
+
+  // 6. Search placeholders
+  const searches = {
+    'impSearch': {vi:'Tìm shipper, bill no, CD no...', en:'Search shipper, bill no, CD no...'},
+    'expSearch': {vi:'Tìm khách hàng, style, PO...', en:'Search customer, style, PO...'},
+    'pipeSearch':{vi:'Nhập tên shipper hoặc ID lô hàng...', en:'Enter shipper name or shipment ID...'},
+  };
+  Object.entries(searches).forEach(([id, texts]) => {
+    const el = document.getElementById(id);
+    if (el) el.placeholder = isEN ? texts.en : texts.vi;
+  });
+
+  // 7. Form labels trong entry page
+  const formLabels = document.querySelectorAll('.f-group label[data-vi]');
+  formLabels.forEach(el => {
+    el.textContent = isEN ? el.dataset.en : el.dataset.vi;
+  });
+
+  // 8. Upload zone
+  const uzTitle = document.querySelector('.uz-title');
+  const uzSub   = document.querySelector('.uz-sub');
+  if (uzTitle) uzTitle.textContent = isEN ? 'Drag & drop Excel file here' : 'Kéo thả file Excel vào đây';
+  if (uzSub)   uzSub.innerHTML = isEN
+    ? 'or click to choose file<br><small>Import_schedule_2026.xlsx · LOADING_SCHEDULE_2026.xlsx</small>'
+    : 'hoặc click để chọn file<br><small>Import_schedule_2026.xlsx · LOADING_SCHEDULE_2026.xlsx</small>';
+
+  // 9. Button labels
+  const btns = {
+    'btn-save-draft': {vi:'Lưu nháp', en:'Save draft'},
+    'btn-save-main' : {vi:'Lưu & Cập nhật', en:'Save & Update'},
+    'btn-clear-form': {vi:'Xoá form', en:'Clear form'},
+  };
+  Object.entries(btns).forEach(([id, texts]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = isEN ? texts.en : texts.vi;
+  });
+
+  // 10. Stat labels
+  const statLabels = document.querySelectorAll('[data-stat-vi]');
+  statLabels.forEach(el => {
+    el.textContent = isEN ? el.dataset.statEn : el.dataset.statVi;
+  });
+
+  updateDate();
+}
+
 function toggleLang() {
   currentLang = currentLang === 'vi' ? 'en' : 'vi';
   localStorage.setItem('viva_lang', currentLang);
   document.getElementById('langBtn').textContent = currentLang === 'vi' ? 'EN' : 'VI';
-  updateDate();
-  // Re-render tất cả
+  applyLang();
+  // Re-render dynamic content
   if (session) {
-    loadDashboard();
+    renderKPI(window._lastKpi);
+    renderUpcomingMini(window._lastUpcoming);
     renderUpcoming();
     filterImport();
     filterExport();
@@ -657,6 +784,7 @@ function bootApp() {
   document.getElementById('appShell').classList.remove('hidden');
   renderUserInfo();
   if (session.role === 'KHO') document.getElementById('entryNav').style.display = 'none';
+  applyLang();
   loadDashboard();
   loadImports();
   loadExports();
@@ -727,13 +855,14 @@ async function api(action, params = {}, method = 'GET', auth = true) {
 async function loadDashboard() {
   try {
     const data = await api('getDashboard');
+    window._lastKpi      = data.kpi;
+    window._lastUpcoming = data.upcoming;
     renderKPI(data.kpi);
     renderAlerts(data.activeAlerts);
     renderChart(data.byMonth);
     renderUpcomingMini(data.upcoming);
     renderRecentImports();
   } catch (e) {
-    // Fallback: dùng dữ liệu mẫu khi chưa có API
     renderKPIFallback();
   }
 }
