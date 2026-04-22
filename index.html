@@ -321,12 +321,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
             <div class="card-body"><div style="position:relative;height:180px"><canvas id="monthChart" role="img" aria-label="Biểu đồ nhập hàng theo tháng"></canvas></div></div>
             <div style="display:flex;gap:16px;padding:0 16px 14px;font-size:11px;color:var(--text2)">
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span>Đúng hạn</span>
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span>Trễ hạn</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span><span id="legend-ok" data-vi="Đúng hạn" data-en="On time">Đúng hạn</span></span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span><span id="legend-late" data-vi="Trễ hạn" data-en="Late">Trễ hạn</span></span>
             </div>
           </div>
           <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
+            <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" id="lnk-upcoming" data-vi="Xem tất cả →" data-en="View all →" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
             <div class="card-body" id="upcomingMini"><div class="loading"><div class="spinner"></div></div></div>
           </div>
         </div>
@@ -338,12 +338,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div class="prog-wrap"><div class="prog-label">Truck</div><div class="prog-track"><div class="prog-fill" style="width:63%;background:var(--amber)"></div></div><div class="prog-val" style="color:var(--amber)">6.3%</div></div>
               <div class="prog-wrap"><div class="prog-label">Container</div><div class="prog-track"><div class="prog-fill" style="width:54%;background:var(--blue)"></div></div><div class="prog-val" style="color:var(--blue)">5.4%</div></div>
               <div class="prog-wrap" style="margin:0"><div class="prog-label">CFS / XNKTC</div><div class="prog-track"><div class="prog-fill" style="width:30%;background:var(--border2)"></div></div><div class="prog-val">3.1%</div></div>
-              <div style="font-size:10px;color:var(--text3);margin-top:10px">Express trễ nhiều nhất — DHL không giao T7 & CN</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:10px" data-vi="Express trễ nhiều nhất — DHL không giao T7 & CN" data-en="Express has most delays — DHL no delivery Sat & Sun">Express trễ nhiều nhất — DHL không giao T7 & CN</div>
             </div>
           </div>
           <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-recent">Lô nhập về kho gần đây</div><div class="card-link" onclick="navTo('import',null)">Xem tất cả</div></div>
-            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Shipper</th><th>Về kho</th><th>Ngày</th><th>Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
+            <div class="card-head"><div class="card-title" id="ct-recent">Lô nhập về kho gần đây</div><div class="card-link" id="lnk-recent" data-vi="Xem tất cả" data-en="View all" onclick="navTo('import',null)">Xem tất cả</div></div>
+            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent"><tr><th data-vi="Shipper" data-en="Shipper">Shipper</th><th data-vi="Về kho" data-en="Arrival">Về kho</th><th data-vi="Ngày" data-en="Days">Ngày</th><th data-vi="Trạng thái" data-en="Status">Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -387,16 +387,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <div class="g2b">
           <div class="card">
-            <div class="card-head"><div class="card-title">Nguyên nhân trễ — Tháng 4/2026</div></div>
+            <div class="card-head"><div class="card-title" id="ct-alertbanner" data-vi="Nguyên nhân trễ — Tháng 4/2026" data-en="Late reasons — Apr/2026">Nguyên nhân trễ — Tháng 4/2026</div></div>
             <div class="card-body">
-              <div class="prog-wrap"><div class="prog-label" style="width:130px">DHL không giao T7-CN</div><div class="prog-track"><div class="prog-fill" style="width:44%;background:var(--red)"></div></div><div class="prog-val">4 lô</div></div>
-              <div class="prog-wrap"><div class="prog-label" style="width:130px">Thông quan chậm</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 lô</div></div>
-              <div class="prog-wrap"><div class="prog-label" style="width:130px">Hàng nội địa xa</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 lô</div></div>
-              <div class="prog-wrap" style="margin:0"><div class="prog-label" style="width:130px">Mở cont CFS trễ</div><div class="prog-track"><div class="prog-fill" style="width:11%;background:var(--border2)"></div></div><div class="prog-val">1 lô</div></div>
+              <div class="prog-wrap"><div class="prog-label" style="width:130px" data-vi="DHL không giao T7-CN" data-en="DHL no Sat-Sun delivery">DHL không giao T7-CN</div><div class="prog-track"><div class="prog-fill" style="width:44%;background:var(--red)"></div></div><div class="prog-val">4 <span data-vi="lô" data-en="lots">lô</span></div></div>
+              <div class="prog-wrap"><div class="prog-label" style="width:130px" data-vi="Thông quan chậm" data-en="Slow customs clearance">Thông quan chậm</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 <span data-vi="lô" data-en="lots">lô</span></div></div>
+              <div class="prog-wrap"><div class="prog-label" style="width:130px" data-vi="Hàng nội địa xa" data-en="Long domestic distance">Hàng nội địa xa</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 <span data-vi="lô" data-en="lots">lô</span></div></div>
+              <div class="prog-wrap" style="margin:0"><div class="prog-label" style="width:130px" data-vi="Mở cont CFS trễ" data-en="Late CFS unstuffing">Mở cont CFS trễ</div><div class="prog-track"><div class="prog-fill" style="width:11%;background:var(--border2)"></div></div><div class="prog-val">1 <span data-vi="lô" data-en="lot">lô</span></div></div>
             </div>
           </div>
           <div class="card">
-            <div class="card-head"><div class="card-title">Tỷ lệ đúng hạn theo tháng</div></div>
+            <div class="card-head"><div class="card-title" id="ct-ontimerate" data-vi="Tỷ lệ đúng hạn theo tháng" data-en="On-time rate by month">Tỷ lệ đúng hạn theo tháng</div></div>
             <div class="card-body">
               <div class="prog-wrap"><div class="prog-label">Jan-26</div><div class="prog-track"><div class="prog-fill" style="width:85%;background:var(--teal)"></div></div><div class="prog-val" style="color:var(--teal)">85%</div></div>
               <div class="prog-wrap"><div class="prog-label">Feb-26</div><div class="prog-track"><div class="prog-fill" style="width:79%;background:var(--teal)"></div></div><div class="prog-val" style="color:var(--teal)">79%</div></div>
@@ -406,7 +406,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
         </div>
         <div class="card">
-          <div class="card-head"><div class="card-title">Danh sách lô đang trễ — cần xử lý</div><div class="card-sub">Sắp xếp theo số ngày trễ</div></div>
+          <div class="card-head"><div class="card-title" id="ct-alertlist" data-vi="Danh sách lô đang trễ — cần xử lý" data-en="Late shipments — action needed">Danh sách lô đang trễ — cần xử lý</div><div class="card-sub" id="cs-alertsort" data-vi="Sắp xếp theo số ngày trễ" data-en="Sorted by days late">Sắp xếp theo số ngày trễ</div></div>
           <div class="tbl-wrap"><table class="tbl">
             <thead id="th-alerts"><tr><th>Shipper</th><th>Nước</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>Ngày trễ</th><th>Lý do</th></tr></thead>
             <tbody id="alertTbl"></tbody>
@@ -566,18 +566,19 @@ function applyLang() {
   const L = t();
   const isEN = currentLang === 'en';
 
-  // 1. Tất cả element có data-vi / data-en
+  // 1. Tất cả element có data-vi / data-en (bao gồm th, span, div, label, input)
   document.querySelectorAll('[data-vi]').forEach(el => {
-    const target = isEN ? el.dataset.en : el.dataset.vi;
+    const target = isEN ? (el.dataset.en||el.dataset.vi) : el.dataset.vi;
     if (!target) return;
-    // Input placeholder
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       el.placeholder = target;
+    } else if (el.children.length === 0) {
+      // Không có con → đổi text trực tiếp
+      el.textContent = target;
     } else {
-      // Chỉ đổi text node đầu tiên, giữ nguyên child elements (badge, svg...)
+      // Có con (svg, badge...) → chỉ đổi text node đầu tiên
       const firstText = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
-      if (firstText) firstText.textContent = target;
-      else if (!el.querySelector('svg,span,div')) el.textContent = target;
+      if (firstText) firstText.textContent = ' ' + target + ' ';
     }
   });
 
@@ -874,19 +875,19 @@ function renderKPI(kpi) {
     <div class="kpi red" onclick="navTo('alerts',null)">
       <div class="kpi-label">${L.late}</div>
       <div class="kpi-value" style="color:var(--red)">${kpi.totalLate}</div>
-      <div class="kpi-sub">/ ${kpi.total} ${L.lô}</div>
-      <div class="kpi-delta" style="color:var(--red)">${L.thisMonth}</div>
+      <div class="kpi-sub">/ ${kpi.total} ${currentLang==='vi'?'lô':'lots'}</div>
+      <div class="kpi-delta" style="color:var(--red)">${currentLang==='vi'?'Tháng này':'This month'}</div>
     </div>
     <div class="kpi green" onclick="navTo('import',null)">
       <div class="kpi-label">${L.ontime}</div>
       <div class="kpi-value" style="color:var(--teal)">${kpi.rate}%</div>
-      <div class="kpi-sub">${kpi.totalOK} / ${kpi.total} ${L.lô}</div>
-      <div class="kpi-delta" style="color:${kpi.rate>=75?'var(--teal)':'var(--red)'}">${L.thisMonth}</div>
+      <div class="kpi-sub">${kpi.totalOK} / ${kpi.total} ${currentLang==='vi'?'lô':'lots'}</div>
+      <div class="kpi-delta" style="color:${kpi.rate>=75?'var(--teal)':'var(--red)'}">${currentLang==='vi'?'Tháng này':'This month'}</div>
     </div>
     <div class="kpi blue" onclick="navTo('import',null)">
       <div class="kpi-label">${L.totalImp}</div>
       <div class="kpi-value" style="color:var(--blue)">${kpi.total}</div>
-      <div class="kpi-sub">${kpi.totalOK} OK · ${kpi.totalLate} NOT OK</div>
+      <div class="kpi-sub">${kpi.totalOK} OK · ${kpi.totalLate} ${currentLang==='vi'?'Trễ':'Late'}</div>
     </div>
     <div class="kpi amber" onclick="navTo('upcoming',null)">
       <div class="kpi-label">${L.upcomingExp}</div>
