@@ -299,6 +299,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="tb-right">
         <input class="tb-search" id="globalSearch" placeholder="Tìm shipper, bill, PO..." oninput="onGlobalSearch(this.value)">
+        <button id="langBtn" onclick="toggleLang()" style="padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-weight:600;background:#fff;cursor:pointer;color:var(--navy)">EN</button>
         <span class="tb-date" id="tbDate"></span>
       </div>
     </div>
@@ -535,12 +536,85 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // ══════════════════════════════════════════════════════════
 const API_URL = 'https://script.google.com/macros/s/AKfycbxUEkoFsjuQ0peBkXl8Y51sj5zv5z8gRfayxqSsgLVqnoP8RpPvZFQ0uc_3t_vjQRufNQ/exec';
 
+// ══ NGÔN NGỮ VI/EN ══
+const LANG = {
+  vi: {
+    dashboard:'Dashboard tổng quan', import:'Import Schedule — Lịch hàng nhập',
+    alerts:'Cảnh báo lô hàng trễ', export:'Loading Schedule — Lịch hàng xuất',
+    upcoming:'Lịch xuất hàng sắp tới', entry:'Nhập liệu / Upload Excel',
+    late:'Lô đang trễ', ontime:'Tỷ lệ đúng hạn', totalImp:'Tổng lô nhập 2026',
+    upcomingExp:'Xuất hàng sắp tới', thisMonth:'Tháng này', inDays:'Trong 14 ngày tới',
+    pcs:'PCS', days:'ngày', lô:'lô', ok:'Đúng hạn', notok:'Trễ hạn',
+    months:['Th.1','Th.2','Th.3','Th.4','Th.5','Th.6','Th.7','Th.8','Th.9','Th.10','Th.11','Th.12'],
+    weekdays:['CN','T2','T3','T4','T5','T6','T7'],
+  },
+  en: {
+    dashboard:'Overview Dashboard', import:'Import Schedule',
+    alerts:'Late Shipment Alerts', export:'Loading Schedule',
+    upcoming:'Upcoming Exports', entry:'Data Entry / Upload Excel',
+    late:'Late shipments', ontime:'On-time rate', totalImp:'Total imports 2026',
+    upcomingExp:'Upcoming exports', thisMonth:'This month', inDays:'In 14 days',
+    pcs:'PCS', days:'days', lô:'lots', ok:'On time', notok:'Late',
+    months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    weekdays:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  }
+};
+let currentLang = localStorage.getItem('viva_lang') || 'vi';
+const t = () => LANG[currentLang];
+
+function toggleLang() {
+  currentLang = currentLang === 'vi' ? 'en' : 'vi';
+  localStorage.setItem('viva_lang', currentLang);
+  document.getElementById('langBtn').textContent = currentLang === 'vi' ? 'EN' : 'VI';
+  updateDate();
+  // Re-render tất cả
+  if (session) {
+    loadDashboard();
+    renderUpcoming();
+    filterImport();
+    filterExport();
+  }
+}
+
+// ── Helper parse date từ nhiều format (DD/MM/YYYY hoặc YYYY-MM-DD)
+function parseDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  const s = String(val).trim();
+  if (!s || s === '–' || s === '-') return null;
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+  // DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+    const [d,m,y] = s.split('/');
+    return new Date(`${y}-${m}-${d}`);
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+function formatDisplayDate(val) {
+  const d = parseDate(val);
+  if (!d) return '–';
+  return d.getDate().toString().padStart(2,'0') + '/' +
+    (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function getDateParts(val) {
+  const d = parseDate(val);
+  if (!d) return { day:'–', month:'–', year:'–', monthIdx:0 };
+  return {
+    day  : d.getDate().toString().padStart(2,'0'),
+    month: (d.getMonth()+1).toString().padStart(2,'0'),
+    year : d.getFullYear(),
+    monthIdx: d.getMonth(),
+  };
+}
+
 // ══ STATE ══
 let session = JSON.parse(localStorage.getItem('viva_session') || 'null');
 let importData = [], exportData = [], pendingImportRows = [];
 let monthChart = null;
-
-// ══ INIT ══
 document.addEventListener('DOMContentLoaded', () => {
   updateDate();
   if (session?.token) bootApp();
@@ -553,10 +627,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateDate() {
   const d = new Date();
-  const days = ['CN','T2','T3','T4','T5','T6','T7'];
+  const wd = t().weekdays;
   document.getElementById('tbDate').textContent =
-    days[d.getDay()] + ' ' + d.getDate().toString().padStart(2,'0') +
+    wd[d.getDay()] + ' ' + d.getDate().toString().padStart(2,'0') +
     '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+  if (document.getElementById('langBtn'))
+    document.getElementById('langBtn').textContent = currentLang === 'vi' ? 'EN' : 'VI';
 }
 
 // ══ AUTH ══
@@ -614,7 +690,7 @@ function navTo(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
   document.getElementById('pg-' + id).classList.add('active');
-  document.getElementById('pageTitle').textContent = pageTitles[id] || id;
+  document.getElementById('pageTitle').textContent = t()[id] || pageTitles[id] || id;
   if (el) el.classList.add('active');
   if (id === 'upcoming') renderUpcoming();
 }
@@ -664,28 +740,29 @@ async function loadDashboard() {
 
 function renderKPI(kpi) {
   if (!kpi) return renderKPIFallback();
+  const L = t();
   document.getElementById('kpiRow').innerHTML = `
     <div class="kpi red" onclick="navTo('alerts',null)">
-      <div class="kpi-label">Lô đang trễ</div>
+      <div class="kpi-label">${L.late}</div>
       <div class="kpi-value" style="color:var(--red)">${kpi.totalLate}</div>
-      <div class="kpi-sub">/ ${kpi.total} tổng lô</div>
-      <div class="kpi-delta" style="color:var(--red)">Tháng này</div>
+      <div class="kpi-sub">/ ${kpi.total} ${L.lô}</div>
+      <div class="kpi-delta" style="color:var(--red)">${L.thisMonth}</div>
     </div>
     <div class="kpi green" onclick="navTo('import',null)">
-      <div class="kpi-label">Tỷ lệ đúng hạn</div>
+      <div class="kpi-label">${L.ontime}</div>
       <div class="kpi-value" style="color:var(--teal)">${kpi.rate}%</div>
-      <div class="kpi-sub">${kpi.totalOK} / ${kpi.total} lô</div>
-      <div class="kpi-delta" style="color:${kpi.rate>=75?'var(--teal)':'var(--red)'}">Tháng này</div>
+      <div class="kpi-sub">${kpi.totalOK} / ${kpi.total} ${L.lô}</div>
+      <div class="kpi-delta" style="color:${kpi.rate>=75?'var(--teal)':'var(--red)'}">${L.thisMonth}</div>
     </div>
     <div class="kpi blue" onclick="navTo('import',null)">
-      <div class="kpi-label">Tổng lô nhập 2026</div>
+      <div class="kpi-label">${L.totalImp}</div>
       <div class="kpi-value" style="color:var(--blue)">${kpi.total}</div>
       <div class="kpi-sub">${kpi.totalOK} OK · ${kpi.totalLate} NOT OK</div>
     </div>
     <div class="kpi amber" onclick="navTo('upcoming',null)">
-      <div class="kpi-label">Xuất hàng sắp tới</div>
+      <div class="kpi-label">${L.upcomingExp}</div>
       <div class="kpi-value" style="color:var(--amber)" id="upcomingCount">–</div>
-      <div class="kpi-sub">Trong 14 ngày tới</div>
+      <div class="kpi-sub">${L.inDays}</div>
     </div>`;
 }
 
@@ -738,15 +815,20 @@ function renderChart(byMonth) {
 }
 
 function renderUpcomingMini(items) {
-  if (!items?.length) { document.getElementById('upcomingMini').innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0">Không có lô xuất nào sắp tới</div>'; return; }
+  const L = t();
+  if (!items?.length) {
+    document.getElementById('upcomingMini').innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0">${currentLang==='vi'?'Không có lô xuất nào sắp tới':'No upcoming exports'}</div>`;
+    return;
+  }
   const el = document.getElementById('upcomingMini');
   if (document.getElementById('upcomingCount')) document.getElementById('upcomingCount').textContent = items.length;
   el.innerHTML = items.slice(0,5).map(d => {
-    const parts = d.plannedDate.split('/');
+    const p = getDateParts(d.plannedDate);
+    const qty = Number(d.qty);
     return `<div class="upc-item">
-      <div class="upc-date-box"><div class="upc-day">${parts[0]||''}</div><div class="upc-month">Th.${parts[1]||''}</div></div>
-      <div class="upc-info"><div class="upc-name">${d.customer} — ${d.country}</div><div class="upc-meta">${d.style} · ${d.transport||'Sea'} · PO ${d.po||'–'}</div></div>
-      <div class="upc-qty"><div class="upc-qty-val">${Number(d.qty||0).toLocaleString()}</div><div class="upc-qty-lbl">PCS</div></div>
+      <div class="upc-date-box"><div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div></div>
+      <div class="upc-info"><div class="upc-name">${d.customer||'–'} — ${d.country||'–'}</div><div class="upc-meta">${d.style||'–'} · ${d.transport||'Sea'} · PO ${d.po||'–'}</div></div>
+      <div class="upc-qty"><div class="upc-qty-val">${isNaN(qty)?'–':qty.toLocaleString()}</div><div class="upc-qty-lbl">${L.pcs}</div></div>
     </div>`;
   }).join('');
 }
@@ -831,21 +913,27 @@ function filterExport() {
 }
 
 function renderUpcoming() {
-  const now = new Date();
-  const items = exportData.filter(r => r.customer && !r.actualDate && r.plannedDate).sort((a,b)=>new Date(a.plannedDate)-new Date(b.plannedDate));
+  const L = t();
+  const items = exportData
+    .filter(r => r.customer && !r.actualDate && r.plannedDate)
+    .sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
+
   let curMonth = '';
   document.getElementById('upcomingFull').innerHTML = items.map(d => {
-    const pd    = d.plannedDate || '';
-    const parts = pd.split('/');
-    const mLabel = 'Tháng ' + (parts[1]||'') + '/' + (parts[2]||'');
+    const p = getDateParts(d.plannedDate);
+    const mLabel = L.months[p.monthIdx] + ' ' + p.year;
+    const qty = Number(d.qty);
     let header = '';
-    if (mLabel !== curMonth) { curMonth = mLabel; header = `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:12px 0 6px;margin-top:4px">${mLabel}</div>`; }
+    if (mLabel !== curMonth) {
+      curMonth = mLabel;
+      header = `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:12px 0 6px;margin-top:4px">${mLabel}</div>`;
+    }
     return header + `<div class="upc-item">
-      <div class="upc-date-box"><div class="upc-day">${parts[0]||'–'}</div><div class="upc-month">Th.${parts[1]||''}</div></div>
-      <div class="upc-info"><div class="upc-name">${d.customer} — ${d.country}</div><div class="upc-meta">${d.style} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div></div>
-      <div class="upc-qty"><div class="upc-qty-val">${Number(d.qty||0).toLocaleString()}</div><div class="upc-qty-lbl">PCS</div></div>
+      <div class="upc-date-box"><div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div></div>
+      <div class="upc-info"><div class="upc-name">${d.customer||'–'} — ${d.country||'–'}</div><div class="upc-meta">${d.style||'–'} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div></div>
+      <div class="upc-qty"><div class="upc-qty-val">${isNaN(qty)?'–':qty.toLocaleString()}</div><div class="upc-qty-lbl">${L.pcs}</div></div>
     </div>`;
-  }).join('') || '<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">Không có lô xuất nào sắp tới</div>';
+  }).join('') || `<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">${currentLang==='vi'?'Không có lô xuất nào sắp tới':'No upcoming exports'}</div>`;
 }
 
 // ══ UPLOAD EXCEL ══
