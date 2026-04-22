@@ -223,19 +223,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- ── LOGIN ── -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+      <button id="langBtnLogin" onclick="toggleLangLogin()" style="padding:4px 12px;border:1px solid #dde1e7;border-radius:6px;font-size:11px;font-weight:600;background:#f4f5f7;cursor:pointer;color:#0B2341">EN</button>
+    </div>
     <div class="login-logo"><div class="login-logo-text">VIVA</div></div>
-    <div class="login-sub">Hệ thống theo dõi hàng nhập xuất nội bộ</div>
+    <div class="login-sub" id="loginSubText">Hệ thống theo dõi hàng nhập xuất nội bộ</div>
     <div class="login-field">
-      <label>Tên đăng nhập</label>
+      <label id="loginLblUser">Tên đăng nhập</label>
       <input type="text" id="loginUser" placeholder="Nhập tài khoản" autocomplete="username">
     </div>
     <div class="login-field">
-      <label>Mật khẩu</label>
+      <label id="loginLblPass">Mật khẩu</label>
       <input type="password" id="loginPass" placeholder="Nhập mật khẩu" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button class="login-btn" onclick="doLogin()">Đăng nhập</button>
+    <button class="login-btn" id="loginBtnText" onclick="doLogin()">Đăng nhập</button>
     <div class="login-err" id="loginErr"></div>
-    <div class="login-hint">Liên hệ Trưởng Logistics để được cấp tài khoản</div>
+    <div class="login-hint" id="loginHintText">Liên hệ Daisy để được cấp tài khoản</div>
   </div>
 </div>
 
@@ -689,12 +692,42 @@ function applyLang() {
   updateDate();
 }
 
+function toggleLangLogin() {
+  currentLang = currentLang === 'vi' ? 'en' : 'vi';
+  localStorage.setItem('viva_lang', currentLang);
+  applyLoginLang();
+}
+
+function applyLoginLang() {
+  const isEN = currentLang === 'en';
+  const btnLogin = document.getElementById('langBtnLogin');
+  const btnApp   = document.getElementById('langBtn');
+  if (btnLogin) btnLogin.textContent = isEN ? 'VI' : 'EN';
+  if (btnApp)   btnApp.textContent   = isEN ? 'VI' : 'EN';
+  const texts = {
+    sub  : isEN ? 'Internal import/export tracking system' : 'Hệ thống theo dõi hàng nhập xuất nội bộ',
+    user : isEN ? 'Username' : 'Tên đăng nhập',
+    pass : isEN ? 'Password' : 'Mật khẩu',
+    ph1  : isEN ? 'Enter username' : 'Nhập tài khoản',
+    ph2  : isEN ? 'Enter password' : 'Nhập mật khẩu',
+    btn  : isEN ? 'Sign in' : 'Đăng nhập',
+    hint : isEN ? 'Contact Daisy to get an account' : 'Liên hệ Daisy để được cấp tài khoản',
+  };
+  const el = id => document.getElementById(id);
+  if (el('loginSubText'))  el('loginSubText').textContent  = texts.sub;
+  if (el('loginLblUser'))  el('loginLblUser').textContent  = texts.user;
+  if (el('loginLblPass'))  el('loginLblPass').textContent  = texts.pass;
+  if (el('loginUser'))     el('loginUser').placeholder     = texts.ph1;
+  if (el('loginPass'))     el('loginPass').placeholder     = texts.ph2;
+  if (el('loginBtnText'))  el('loginBtnText').textContent  = texts.btn;
+  if (el('loginHintText')) el('loginHintText').textContent = texts.hint;
+}
+
 function toggleLang() {
   currentLang = currentLang === 'vi' ? 'en' : 'vi';
   localStorage.setItem('viva_lang', currentLang);
-  document.getElementById('langBtn').textContent = currentLang === 'vi' ? 'EN' : 'VI';
+  applyLoginLang();
   applyLang();
-  // Re-render dynamic content
   if (session) {
     renderKPI(window._lastKpi);
     renderUpcomingMini(window._lastUpcoming);
@@ -745,8 +778,8 @@ let importData = [], exportData = [], pendingImportRows = [];
 let monthChart = null;
 document.addEventListener('DOMContentLoaded', () => {
   updateDate();
+  applyLoginLang();
   if (session?.token) bootApp();
-  // Responsive: show menu button on mobile
   if (window.innerWidth <= 768) document.getElementById('menuBtn').style.display = 'block';
   window.addEventListener('resize', () => {
     document.getElementById('menuBtn').style.display = window.innerWidth <= 768 ? 'block' : 'none';
@@ -785,10 +818,11 @@ function bootApp() {
   document.getElementById('appShell').classList.remove('hidden');
   renderUserInfo();
   if (session.role === 'KHO') document.getElementById('entryNav').style.display = 'none';
+  // Apply lang trước cho static elements
   applyLang();
-  loadDashboard();
-  loadImports();
-  loadExports();
+  // Load data — render xong thì apply lang lại để dịch KPI cards
+  Promise.all([loadDashboard(), loadImports(), loadExports()])
+    .finally(() => applyLang());
 }
 
 function renderUserInfo() {
@@ -864,8 +898,33 @@ async function loadDashboard() {
     renderUpcomingMini(data.upcoming);
     renderRecentImports();
   } catch (e) {
+    console.error('loadDashboard error:', e.message);
     renderKPIFallback();
   }
+}
+
+async function loadImports() {
+  try {
+    const data = await api('getImports');
+    importData = data.rows || [];
+  } catch(e) {
+    console.error('loadImports error:', e.message);
+    importData = [];
+  }
+  filterImport();
+  populateShipperList();
+}
+
+async function loadExports() {
+  try {
+    const data = await api('getExports');
+    exportData = data.rows || [];
+  } catch(e) {
+    console.error('loadExports error:', e.message);
+    exportData = [];
+  }
+  filterExport();
+  renderUpcoming();
 }
 
 function renderKPI(kpi) {
@@ -975,15 +1034,6 @@ function renderRecentImports() {
 }
 
 // ══ IMPORTS ══
-async function loadImports() {
-  try {
-    const data = await api('getImports');
-    importData = data.rows || [];
-  } catch(e) { importData = []; }
-  filterImport();
-  populateShipperList();
-}
-
 function filterImport() {
   const q   = (document.getElementById('impSearch')?.value||'').toLowerCase();
   const st  = document.getElementById('impStatus')?.value||'';
@@ -995,7 +1045,10 @@ function filterImport() {
     (!md || r.shipMode === md)
   );
 
-  document.getElementById('impCount').textContent = `Hiển thị ${filtered.length} / ${importData.length} lô`;
+  const lbl = currentLang==='vi'
+    ? `Hiển thị ${filtered.length} / ${importData.length} lô`
+    : `Showing ${filtered.length} / ${importData.length} lots`;
+  document.getElementById('impCount').textContent = lbl;
   document.getElementById('impTbl').innerHTML = filtered.map((r,i) => `<tr>
     <td>${i+1}</td>
     <td class="shipper" title="${r.shipper}">${r.shipper}</td>
@@ -1007,19 +1060,10 @@ function filterImport() {
     <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
     <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${r.status||'–'}</span></td>
     <td style="font-size:10px;color:var(--text3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
-  </tr>`).join('') || '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>';
+  </tr>`).join('') || currentLang==="vi"?'<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>':'<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
 }
 
 // ══ EXPORTS ══
-async function loadExports() {
-  try {
-    const data = await api('getExports');
-    exportData = data.rows || [];
-  } catch(e) { exportData = []; }
-  filterExport();
-  renderUpcoming();
-}
-
 function filterExport() {
   const q  = (document.getElementById('expSearch')?.value||'').toLowerCase();
   const st = document.getElementById('expStatus')?.value||'';
@@ -1027,7 +1071,10 @@ function filterExport() {
     (!q  || [r.customer,r.style,r.po].some(v=>(v||'').toLowerCase().includes(q))) &&
     (!st || r.status === st)
   );
-  document.getElementById('expCount').textContent = `Hiển thị ${filtered.length} / ${exportData.length} lô`;
+  const lbl = currentLang==='vi'
+    ? `Hiển thị ${filtered.length} / ${exportData.length} lô`
+    : `Showing ${filtered.length} / ${exportData.length} lots`;
+  document.getElementById('expCount').textContent = lbl;
   document.getElementById('expTbl').innerHTML = filtered.map((r,i) => `<tr>
     <td>${i+1}</td>
     <td style="font-weight:600">${r.customer}</td>
@@ -1039,7 +1086,7 @@ function filterExport() {
     <td><span class="chip ch-info">${r.transport||'–'}</span></td>
     <td style="font-size:10px">${r.container||'–'}</td>
     <td><span class="chip ${r.status==='Shipped'?'ch-ship':r.status==='Booked'?'ch-ok':'ch-warn'}">${r.status||'–'}</span></td>
-  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>';
+  </tr>`).join('') || currentLang==="vi"?'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>':'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
 }
 
 function renderUpcoming() {
