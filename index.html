@@ -986,40 +986,88 @@ function renderAlerts(alerts) {
 }
 
 function renderChart(byMonth) {
-  if (!byMonth?.length) return;
-  if (monthChart) monthChart.destroy();
-  monthChart = new Chart(document.getElementById('monthChart'), {
-    type:'bar',
-    data:{
-      labels: byMonth.map(m => m.label),
-      datasets:[
-        {label:'OK', data:byMonth.map(m=>m.ok),   backgroundColor:'#0EA47A', borderRadius:4},
-        {label:'Late',data:byMonth.map(m=>m.late), backgroundColor:'#D94040', borderRadius:4},
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},
-              y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}}}}
-  });
+  try {
+    const canvas = document.getElementById('monthChart');
+    if (!canvas) return;
+    if (!byMonth?.length) {
+      console.warn('renderChart: byMonth is empty');
+      return;
+    }
+    if (monthChart) { monthChart.destroy(); monthChart = null; }
+    monthChart = new Chart(canvas, {
+      type:'bar',
+      data:{
+        labels: byMonth.map(m => m.label),
+        datasets:[
+          {label:'OK',   data:byMonth.map(m=>m.ok),   backgroundColor:'#0EA47A', borderRadius:4, stack:'s'},
+          {label:'Late', data:byMonth.map(m=>m.late),  backgroundColor:'#D94040', borderRadius:4, stack:'s'},
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{stacked:true, grid:{display:false}, ticks:{font:{size:10}}},
+          y:{stacked:true, grid:{color:'rgba(0,0,0,.05)'}, ticks:{font:{size:10}}}
+        }
+      }
+    });
+    console.log('Chart rendered with', byMonth.length, 'months:', byMonth.map(m=>m.label).join(', '));
+  } catch(e) {
+    console.error('renderChart error:', e);
+  }
 }
 
 function renderUpcomingMini(items) {
   const L = t();
+  const el = document.getElementById('upcomingMini');
+
   if (!items?.length) {
-    document.getElementById('upcomingMini').innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0">${currentLang==='vi'?'Không có lô xuất nào sắp tới':'No upcoming exports'}</div>`;
+    el.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0">${currentLang==='vi'?'Không có lô xuất trong 7 ngày tới':'No exports in next 7 days'}</div>`;
     return;
   }
-  const el = document.getElementById('upcomingMini');
-  if (document.getElementById('upcomingCount')) document.getElementById('upcomingCount').textContent = items.length;
-  el.innerHTML = items.slice(0,5).map(d => {
-    const p = getDateParts(d.plannedDate);
-    const qty = Number(d.qty);
-    return `<div class="upc-item">
-      <div class="upc-date-box"><div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div></div>
-      <div class="upc-info"><div class="upc-name">${d.customer||'–'} — ${d.country||'–'}</div><div class="upc-meta">${d.style||'–'} · ${d.transport||'Sea'} · PO ${d.po||'–'}</div></div>
-      <div class="upc-qty"><div class="upc-qty-val">${isNaN(qty)?'–':qty.toLocaleString()}</div><div class="upc-qty-lbl">${L.pcs}</div></div>
-    </div>`;
-  }).join('');
+
+  const now  = new Date();
+  const in7  = new Date(now); in7.setDate(now.getDate() + 7);
+
+  // Lọc 7 ngày tới
+  const next7 = items.filter(d => {
+    const pd = parseDate(d.plannedDate);
+    return pd && pd >= now && pd <= in7;
+  });
+
+  if (document.getElementById('upcomingCount'))
+    document.getElementById('upcomingCount').textContent = next7.length || items.length;
+
+  const display = next7.length ? next7 : items.slice(0, 5);
+
+  // Nhóm theo ngày
+  const byDate = {};
+  display.forEach(d => {
+    const key = d.plannedDate || '–';
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(d);
+  });
+
+  el.innerHTML = Object.entries(byDate).map(([date, rows]) => {
+    const p = getDateParts(date);
+    return rows.map((d, i) => {
+      const qty = Number(d.qty);
+      return `<div class="upc-item" style="${i>0?'padding-top:4px':''}">
+        <div class="upc-date-box">
+          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div>` : '<div style="width:40px"></div>'}
+        </div>
+        <div class="upc-info">
+          <div class="upc-name">${d.customer||'–'} — ${d.country||'–'}</div>
+          <div class="upc-meta">${d.style||'–'} · PO ${d.po||'–'}</div>
+        </div>
+        <div class="upc-qty">
+          <div class="upc-qty-val">${isNaN(qty)||qty===0?'–':qty.toLocaleString()}</div>
+          <div class="upc-qty-lbl">${L.pcs}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }).join('<div style="height:8px"></div>');
 }
 
 function renderRecentImports() {
@@ -1091,26 +1139,60 @@ function filterExport() {
 
 function renderUpcoming() {
   const L = t();
+  const now  = new Date();
+  const in7  = new Date(now); in7.setDate(now.getDate() + 7);
+
   const items = exportData
     .filter(r => r.customer && !r.actualDate && r.plannedDate)
     .sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
 
+  // Nhóm theo ngày
+  const byDate = {};
+  items.forEach(d => {
+    const key = d.plannedDate || '–';
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(d);
+  });
+
   let curMonth = '';
-  document.getElementById('upcomingFull').innerHTML = items.map(d => {
-    const p = getDateParts(d.plannedDate);
+  const html = Object.entries(byDate).map(([date, rows]) => {
+    const p = getDateParts(date);
     const mLabel = L.months[p.monthIdx] + ' ' + p.year;
-    const qty = Number(d.qty);
+    const pd = parseDate(date);
+    const isNext7 = pd && pd >= now && pd <= in7;
+
     let header = '';
     if (mLabel !== curMonth) {
       curMonth = mLabel;
       header = `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:12px 0 6px;margin-top:4px">${mLabel}</div>`;
     }
-    return header + `<div class="upc-item">
-      <div class="upc-date-box"><div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div></div>
-      <div class="upc-info"><div class="upc-name">${d.customer||'–'} — ${d.country||'–'}</div><div class="upc-meta">${d.style||'–'} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div></div>
-      <div class="upc-qty"><div class="upc-qty-val">${isNaN(qty)?'–':qty.toLocaleString()}</div><div class="upc-qty-lbl">${L.pcs}</div></div>
-    </div>`;
-  }).join('') || `<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">${currentLang==='vi'?'Không có lô xuất nào sắp tới':'No upcoming exports'}</div>`;
+
+    const rowsHtml = rows.map((d, i) => {
+      const qty = Number(d.qty);
+      return `<div class="upc-item" style="position:relative${i>0?';padding-top:6px':''}">
+        ${isNext7 ? '<div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:70%;background:var(--teal);border-radius:99px"></div>' : ''}
+        <div class="upc-date-box">
+          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div>` : '<div style="min-width:40px"></div>'}
+        </div>
+        <div class="upc-info">
+          <div class="upc-name" style="display:flex;align-items:center;gap:6px">
+            ${d.customer||'–'} — ${d.country||'–'}
+            ${isNext7 ? `<span class="chip ch-ok" style="font-size:9px">${currentLang==='vi'?'7 ngày tới':'Next 7 days'}</span>` : ''}
+          </div>
+          <div class="upc-meta">${d.style||'–'} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div>
+        </div>
+        <div class="upc-qty">
+          <div class="upc-qty-val">${isNaN(qty)||qty===0?'–':qty.toLocaleString()}</div>
+          <div class="upc-qty-lbl">${L.pcs}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return header + rowsHtml;
+  }).join('');
+
+  document.getElementById('upcomingFull').innerHTML = html ||
+    `<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">${currentLang==='vi'?'Không có lô xuất nào sắp tới':'No upcoming exports'}</div>`;
 }
 
 // ══ UPLOAD EXCEL ══
