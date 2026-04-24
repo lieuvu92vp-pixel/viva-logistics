@@ -1253,7 +1253,7 @@ async function handleFile(file) {
 async function submitImport() {
   if (!pendingImportRows.length) return;
   try {
-    const res = await api('importExcel', { rows: pendingImportRows }, 'POST');
+    const res = await api('importExcel', { rows: pendingImportRows }, 'GET');
     showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     document.getElementById('uploadPreview').style.display = 'none';
     pendingImportRows = [];
