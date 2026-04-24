@@ -316,9 +316,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div class="ab-text" id="dashAlertText"></div>
           <button class="ab-btn" onclick="navTo('alerts',null)">Xem ngay →</button>
         </div>
-        <div class="kpi-row" id="kpiRow">
+
+        <!-- SECTION: HÀNG NHẬP -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="width:4px;height:20px;background:var(--blue);border-radius:99px"></div>
+          <div id="sec-import-label" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)" data-vi="HÀNG NHẬP" data-en="IMPORTS">HÀNG NHẬP</div>
+        </div>
+        <div class="kpi-row" id="kpiRowImport">
           <div class="loading"><div class="spinner"></div>Đang tải...</div>
         </div>
+
+        <!-- SECTION: HÀNG XUẤT -->
+        <div style="display:flex;align-items:center;gap:10px;margin:4px 0 6px">
+          <div style="width:4px;height:20px;background:var(--teal);border-radius:99px"></div>
+          <div id="sec-export-label" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)" data-vi="HÀNG XUẤT" data-en="EXPORTS">HÀNG XUẤT</div>
+        </div>
+        <div class="kpi-row" id="kpiRowExport">
+          <div class="loading"><div class="spinner"></div>Đang tải...</div>
+        </div>
+
         <div class="g2">
           <div class="card">
             <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
@@ -932,12 +948,15 @@ async function loadExports() {
   }
   filterExport();
   renderUpcoming();
+  renderExportKPI(); // Cập nhật KPI hàng xuất
 }
 
 function renderKPI(kpi) {
   if (!kpi) return renderKPIFallback();
   const L = t();
-  document.getElementById('kpiRow').innerHTML = `
+
+  // ── IMPORT KPIs (3 thẻ)
+  document.getElementById('kpiRowImport').innerHTML = `
     <div class="kpi red" onclick="navTo('alerts',null)">
       <div class="kpi-label">${L.late}</div>
       <div class="kpi-value" style="color:var(--red)">${kpi.totalLate}</div>
@@ -954,20 +973,70 @@ function renderKPI(kpi) {
       <div class="kpi-label">${L.totalImp}</div>
       <div class="kpi-value" style="color:var(--blue)">${kpi.total}</div>
       <div class="kpi-sub">${kpi.totalOK} OK · ${kpi.totalLate} ${currentLang==='vi'?'Trễ':'Late'}</div>
+    </div>`;
+
+  // ── EXPORT KPIs (3 thẻ) — tính từ exportData
+  renderExportKPI();
+}
+
+function renderExportKPI() {
+  const L = t();
+  const now   = new Date();
+  const in14  = new Date(now); in14.setDate(now.getDate() + 14);
+  const ago7  = new Date(now); ago7.setDate(now.getDate() - 7);
+
+  // Hàm đếm lô duy nhất (ngày + brand + nước = 1 lô)
+  const countUniqueLots = (rows) => {
+    const keys = new Set(rows.map(r => `${r.plannedDate||r.actualDate}||${r.customer}||${r.country}`));
+    return keys.size;
+  };
+
+  // Lô xuất tuần trước (có actual_date trong 7 ngày qua)
+  const lastWeekRows = exportData.filter(r => {
+    const ad = parseDate(r.actualDate);
+    return ad && ad >= ago7 && ad <= now;
+  });
+  const lastWeekLots = countUniqueLots(lastWeekRows);
+
+  // Lô xuất 14 ngày tới (có planned_date, chưa có actual_date)
+  const next14Rows = exportData.filter(r => {
+    const pd = parseDate(r.plannedDate);
+    return pd && pd >= now && pd <= in14 && !r.actualDate;
+  });
+  const next14Lots = countUniqueLots(next14Rows);
+
+  // Tổng lô xuất 2026
+  const totalLots = countUniqueLots(exportData);
+
+  document.getElementById('kpiRowExport').innerHTML = `
+    <div class="kpi amber" onclick="navTo('export',null)">
+      <div class="kpi-label">${currentLang==='vi'?'Đã xuất tuần trước':'Shipped last 7 days'}</div>
+      <div class="kpi-value" style="color:var(--amber)">${lastWeekLots}</div>
+      <div class="kpi-sub">${currentLang==='vi'?`${lastWeekRows.length} dòng dữ liệu`:`${lastWeekRows.length} line items`}</div>
+      <div class="kpi-delta" style="color:var(--text3)">${currentLang==='vi'?'7 ngày qua':'Past 7 days'}</div>
     </div>
-    <div class="kpi amber" onclick="navTo('upcoming',null)">
-      <div class="kpi-label">${L.upcomingExp}</div>
-      <div class="kpi-value" style="color:var(--amber)" id="upcomingCount">–</div>
-      <div class="kpi-sub">${L.inDays}</div>
+    <div class="kpi green" onclick="navTo('upcoming',null)">
+      <div class="kpi-label">${currentLang==='vi'?'Sẽ xuất 14 ngày tới':'Upcoming 14 days'}</div>
+      <div class="kpi-value" style="color:var(--teal)" id="upcomingCount">${next14Lots}</div>
+      <div class="kpi-sub">${currentLang==='vi'?`${next14Rows.length} dòng dữ liệu`:`${next14Rows.length} line items`}</div>
+      <div class="kpi-delta" style="color:var(--text3)">${currentLang==='vi'?'14 ngày tới':'Next 14 days'}</div>
+    </div>
+    <div class="kpi blue" onclick="navTo('export',null)">
+      <div class="kpi-label">${currentLang==='vi'?'Tổng lô xuất 2026':'Total export lots 2026'}</div>
+      <div class="kpi-value" style="color:var(--blue)">${totalLots}</div>
+      <div class="kpi-sub">${currentLang==='vi'?`${exportData.length} dòng dữ liệu`:`${exportData.length} line items`}</div>
     </div>`;
 }
 
 function renderKPIFallback() {
-  document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi red"><div class="kpi-label">Lô đang trễ</div><div class="kpi-value" style="color:var(--red)">9</div><div class="kpi-sub">/ 62 tháng 4</div></div>
-    <div class="kpi green"><div class="kpi-label">Tỷ lệ đúng hạn</div><div class="kpi-value" style="color:var(--teal)">74%</div><div class="kpi-sub">273 / 369 lô</div></div>
-    <div class="kpi blue"><div class="kpi-label">Tổng lô nhập</div><div class="kpi-value" style="color:var(--blue)">369</div><div class="kpi-sub">Dec-25 → Apr-26</div></div>
-    <div class="kpi amber"><div class="kpi-label">Xuất sắp tới</div><div class="kpi-value" style="color:var(--amber)">3</div><div class="kpi-sub">Trong 14 ngày</div></div>`;
+  document.getElementById('kpiRowImport').innerHTML = `
+    <div class="kpi red"><div class="kpi-label">Lô đang trễ</div><div class="kpi-value" style="color:var(--red)">–</div><div class="kpi-sub">Đang tải...</div></div>
+    <div class="kpi green"><div class="kpi-label">Tỷ lệ đúng hạn</div><div class="kpi-value" style="color:var(--teal)">–</div><div class="kpi-sub">Đang tải...</div></div>
+    <div class="kpi blue"><div class="kpi-label">Tổng lô nhập</div><div class="kpi-value" style="color:var(--blue)">–</div><div class="kpi-sub">Đang tải...</div></div>`;
+  document.getElementById('kpiRowExport').innerHTML = `
+    <div class="kpi amber"><div class="kpi-label">Đã xuất tuần trước</div><div class="kpi-value" style="color:var(--amber)">–</div><div class="kpi-sub">Đang tải...</div></div>
+    <div class="kpi green"><div class="kpi-label">Sẽ xuất 14 ngày tới</div><div class="kpi-value" style="color:var(--teal)">–</div><div class="kpi-sub">Đang tải...</div></div>
+    <div class="kpi blue"><div class="kpi-label">Tổng lô xuất 2026</div><div class="kpi-value" style="color:var(--blue)">–</div><div class="kpi-sub">Đang tải...</div></div>`;
 }
 
 function renderAlerts(alerts) {
