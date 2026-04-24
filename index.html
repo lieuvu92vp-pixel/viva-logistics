@@ -1059,7 +1059,7 @@ function renderUpcomingMini(items) {
         </div>
         <div class="upc-info">
           <div class="upc-name">${d.customer||'–'} — ${d.country||'–'}</div>
-          <div class="upc-meta">${d.style||'–'} · PO ${d.po||'–'}</div>
+          <div class="upc-meta">${d.style||'–'}${d.po ? ' · PO ' + d.po : ''}</div>
         </div>
         <div class="upc-qty">
           <div class="upc-qty-val">${isNaN(qty)||qty===0?'–':qty.toLocaleString()}</div>
@@ -1172,7 +1172,7 @@ function renderUpcoming() {
       return `<div class="upc-item" style="position:relative${i>0?';padding-top:6px':''}">
         ${isNext7 ? '<div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:70%;background:var(--teal);border-radius:99px"></div>' : ''}
         <div class="upc-date-box">
-          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div>` : '<div style="min-width:40px"></div>'}
+          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]} ${p.year}</div>` : '<div style="min-width:40px"></div>'}
         </div>
         <div class="upc-info">
           <div class="upc-name" style="display:flex;align-items:center;gap:6px">
