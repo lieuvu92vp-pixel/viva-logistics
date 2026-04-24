@@ -876,12 +876,17 @@ async function api(action, params = {}, method = 'GET', auth = true) {
     }
   });
 
+  console.log('API call:', url.substring(0, 100));
   const res = await fetch(url, { redirect: 'follow' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
+  console.log('API response:', text.substring(0, 150));
   let json;
   try { json = JSON.parse(text); }
-  catch(e) { throw new Error('Lỗi phản hồi server'); }
+  catch(e) {
+    console.error('Parse error:', text.substring(0, 200));
+    throw new Error('Lỗi phản hồi server');
+  }
   if (!json.ok) throw new Error(json.error || 'Lỗi không xác định');
   return json.data;
 }
@@ -1021,53 +1026,55 @@ function renderChart(byMonth) {
 function renderUpcomingMini(items) {
   const L = t();
   const el = document.getElementById('upcomingMini');
-
   if (!items?.length) {
     el.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:8px 0">${currentLang==='vi'?'Không có lô xuất trong 7 ngày tới':'No exports in next 7 days'}</div>`;
     return;
   }
 
-  const now  = new Date();
-  const in7  = new Date(now); in7.setDate(now.getDate() + 7);
+  const now = new Date();
+  const in7 = new Date(now); in7.setDate(now.getDate() + 7);
 
-  // Lọc 7 ngày tới
-  const next7 = items.filter(d => {
+  // Nhóm theo ngày + customer + country + transport
+  const groups = {};
+  items.forEach(d => {
+    const key = `${d.plannedDate}||${d.customer}||${d.country}||${d.transport||'SEA'}`;
+    if (!groups[key]) groups[key] = { ...d, styles: [], totalQty: 0, pos: [] };
+    if (d.style && !groups[key].styles.includes(d.style)) groups[key].styles.push(d.style);
+    groups[key].totalQty += Number(d.qty) || 0;
+    if (d.po && d.po !== '–' && !groups[key].pos.includes(d.po)) groups[key].pos.push(d.po);
+  });
+
+  const sorted = Object.values(groups).sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
+  if (document.getElementById('upcomingCount')) document.getElementById('upcomingCount').textContent = sorted.length;
+
+  el.innerHTML = sorted.slice(0,6).map(d => {
+    const p = getDateParts(d.plannedDate);
+    const qty = d.totalQty;
     const pd = parseDate(d.plannedDate);
-    return pd && pd >= now && pd <= in7;
-  });
+    const isNext7 = pd && pd >= now && pd <= in7;
+    const transport = (d.transport||'SEA').toUpperCase();
+    const tColor = transport === 'AIR' ? 'var(--amber)' : 'var(--blue)';
 
-  if (document.getElementById('upcomingCount'))
-    document.getElementById('upcomingCount').textContent = next7.length || items.length;
-
-  const display = next7.length ? next7 : items.slice(0, 5);
-
-  // Nhóm theo ngày
-  const byDate = {};
-  display.forEach(d => {
-    const key = d.plannedDate || '–';
-    if (!byDate[key]) byDate[key] = [];
-    byDate[key].push(d);
-  });
-
-  el.innerHTML = Object.entries(byDate).map(([date, rows]) => {
-    const p = getDateParts(date);
-    return rows.map((d, i) => {
-      const qty = Number(d.qty);
-      return `<div class="upc-item" style="${i>0?'padding-top:4px':''}">
-        <div class="upc-date-box">
-          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div>` : '<div style="width:40px"></div>'}
+    return `<div class="upc-item">
+      <div class="upc-date-box">
+        <div class="upc-day">${p.day}</div>
+        <div class="upc-month">${L.months[p.monthIdx]}</div>
+      </div>
+      <div class="upc-info">
+        <div class="upc-name" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <span style="font-weight:600">${d.customer||'–'} — ${d.country||'–'}</span>
+          <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:${tColor}22;color:${tColor}">${transport}</span>
+          ${isNext7?`<span class="chip ch-ok" style="font-size:9px">${currentLang==='vi'?'7 ngày':'7 days'}</span>`:''}
         </div>
-        <div class="upc-info">
-          <div class="upc-name">${d.customer||'–'} — ${d.country||'–'}</div>
-          <div class="upc-meta">${d.style||'–'}${d.po ? ' · PO ' + d.po : ''}</div>
-        </div>
-        <div class="upc-qty">
-          <div class="upc-qty-val">${isNaN(qty)||qty===0?'–':qty.toLocaleString()}</div>
-          <div class="upc-qty-lbl">${L.pcs}</div>
-        </div>
-      </div>`;
-    }).join('');
-  }).join('<div style="height:8px"></div>');
+        <div style="font-size:10px;color:var(--text2);margin-top:2px;line-height:1.6">${d.styles.join(' · ')}</div>
+        ${d.pos.length?`<div style="font-size:10px;color:var(--text3)">PO: ${d.pos.join(', ')}</div>`:''}
+      </div>
+      <div class="upc-qty">
+        <div class="upc-qty-val">${qty>0?qty.toLocaleString():'–'}</div>
+        <div class="upc-qty-lbl">${L.pcs}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderRecentImports() {
@@ -1172,14 +1179,14 @@ function renderUpcoming() {
       return `<div class="upc-item" style="position:relative${i>0?';padding-top:6px':''}">
         ${isNext7 ? '<div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:70%;background:var(--teal);border-radius:99px"></div>' : ''}
         <div class="upc-date-box">
-          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]} ${p.year}</div>` : '<div style="min-width:40px"></div>'}
+          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div>` : '<div style="min-width:40px"></div>'}
         </div>
         <div class="upc-info">
           <div class="upc-name" style="display:flex;align-items:center;gap:6px">
             ${d.customer||'–'} — ${d.country||'–'}
             ${isNext7 ? `<span class="chip ch-ok" style="font-size:9px">${currentLang==='vi'?'7 ngày tới':'Next 7 days'}</span>` : ''}
           </div>
-          <div class="upc-meta">${d.style||'–'}${d.po && d.po!=='–' ? ' · PO ' + d.po : ''}</div>
+          <div class="upc-meta">${d.style||'–'} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div>
         </div>
         <div class="upc-qty">
           <div class="upc-qty-val">${isNaN(qty)||qty===0?'–':qty.toLocaleString()}</div>
@@ -1249,25 +1256,16 @@ async function handleFile(file) {
   };
   reader.readAsArrayBuffer(file);
 }
+
 async function submitImport() {
   if (!pendingImportRows.length) return;
   try {
-    const batchSize = 10;
-    let imported = 0, skipped = 0;
-    for (let i = 0; i < pendingImportRows.length; i += batchSize) {
-      const batch = pendingImportRows.slice(i, i + batchSize);
-      const res = await api('importExcel', { rows: JSON.stringify(batch) }, 'GET');
-      imported += res.imported || 0;
-      skipped  += res.skipped  || 0;
-      showToast(`Đang import... ${Math.min(i+batchSize, pendingImportRows.length)}/${pendingImportRows.length} lô`);
-    }
-    showToast(`✓ Đã import ${imported} lô (bỏ qua ${skipped} trùng)`, 'success');
+    const res = await api('importExcel', { rows: pendingImportRows }, 'POST');
+    showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     document.getElementById('uploadPreview').style.display = 'none';
     pendingImportRows = [];
     loadImports();
-  } catch(e) {
-    showToast('Lỗi import: ' + e.message, 'error');
-  }
+  } catch(e) { showToast('Lỗi import: ' + e.message, 'error'); }
 }
 
 function formatExcelDate(val) {
