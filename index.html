@@ -961,13 +961,13 @@ function renderKPI(kpi) {
       <div class="kpi-label">${L.late}</div>
       <div class="kpi-value" style="color:var(--red)">${kpi.totalLate}</div>
       <div class="kpi-sub">/ ${kpi.total} ${currentLang==='vi'?'lô':'lots'}</div>
-      <div class="kpi-delta" style="color:var(--red)">${currentLang==='vi'?'Tháng này':'This month'}</div>
+      <div class="kpi-delta" style="color:var(--red)">${100-kpi.rate}% ${currentLang==='vi'?'trễ hạn':'late rate'}</div>
     </div>
     <div class="kpi green" onclick="navTo('import',null)">
       <div class="kpi-label">${L.ontime}</div>
-      <div class="kpi-value" style="color:var(--teal)">${kpi.rate}%</div>
-      <div class="kpi-sub">${kpi.totalOK} / ${kpi.total} ${currentLang==='vi'?'lô':'lots'}</div>
-      <div class="kpi-delta" style="color:${kpi.rate>=75?'var(--teal)':'var(--red)'}">${currentLang==='vi'?'Tháng này':'This month'}</div>
+      <div class="kpi-value" style="color:var(--teal)">${kpi.totalOK}</div>
+      <div class="kpi-sub">/ ${kpi.total} ${currentLang==='vi'?'lô':'lots'}</div>
+      <div class="kpi-delta" style="color:${kpi.rate>=75?'var(--teal)':'var(--red)'}">${kpi.rate}% ${currentLang==='vi'?'đúng hạn':'on-time rate'}</div>
     </div>
     <div class="kpi blue" onclick="navTo('import',null)">
       <div class="kpi-label">${L.totalImp}</div>
@@ -1075,13 +1075,28 @@ function renderChart(byMonth) {
       data:{
         labels: byMonth.map(m => m.label),
         datasets:[
-          {label:'OK',   data:byMonth.map(m=>m.ok),   backgroundColor:'#0EA47A', borderRadius:4, stack:'s'},
-          {label:'Late', data:byMonth.map(m=>m.late),  backgroundColor:'#D94040', borderRadius:4, stack:'s'},
+          {label: currentLang==='vi'?'Đúng hạn':'On time', data:byMonth.map(m=>m.ok),   backgroundColor:'#0EA47A', borderRadius:4, stack:'s'},
+          {label: currentLang==='vi'?'Trễ hạn':'Late',     data:byMonth.map(m=>m.late),  backgroundColor:'#D94040', borderRadius:4, stack:'s'},
         ]
       },
       options:{
         responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            callbacks:{
+              label: function(ctx) {
+                const monthTotal = ctx.chart.data.datasets.reduce((s,d)=>s+(d.data[ctx.dataIndex]||0),0);
+                const pct = monthTotal > 0 ? Math.round(ctx.raw/monthTotal*100) : 0;
+                return `${ctx.dataset.label}: ${ctx.raw} ${currentLang==='vi'?'lô':'lots'} (${pct}%)`;
+              },
+              footer: function(items) {
+                const total = items.reduce((s,i)=>s+i.raw,0);
+                return currentLang==='vi' ? `Tổng: ${total} lô` : `Total: ${total} lots`;
+              }
+            }
+          }
+        },
         scales:{
           x:{stacked:true, grid:{display:false}, ticks:{font:{size:10}}},
           y:{stacked:true, grid:{color:'rgba(0,0,0,.05)'}, ticks:{font:{size:10}}}
