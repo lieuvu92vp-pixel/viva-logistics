@@ -427,6 +427,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <option value="Shipped">Shipped</option>
               <option value="Booked">Booked</option>
               <option value="Pending">Pending</option>
+              <option value="Urgent">🔴 Urgent</option>
+              <option value="Overdue">Overdue</option>
             </select>
             <span class="fb-count" id="expCount"></span>
           </div>
@@ -1130,18 +1132,31 @@ function filterExport() {
     ? `Hiển thị ${filtered.length} / ${exportData.length} lô`
     : `Showing ${filtered.length} / ${exportData.length} lots`;
   document.getElementById('expCount').textContent = lbl;
-  document.getElementById('expTbl').innerHTML = filtered.map((r,i) => `<tr>
-    <td>${i+1}</td>
-    <td style="font-weight:600">${r.customer}</td>
-    <td>${r.country}</td>
-    <td style="font-size:10px">${r.style}</td>
-    <td style="font-size:10px">${r.po||'–'}</td>
-    <td style="text-align:right;font-weight:600">${Number(r.qty||0).toLocaleString()}</td>
-    <td>${r.plannedDate||'–'}</td>
-    <td><span class="chip ch-info">${r.transport||'–'}</span></td>
-    <td style="font-size:10px">${r.container||'–'}</td>
-    <td><span class="chip ${r.status==='Shipped'?'ch-ship':r.status==='Booked'?'ch-ok':'ch-warn'}">${r.status||'–'}</span></td>
-  </tr>`).join('') || currentLang==="vi"?'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>':'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
+
+  const noData = currentLang==='vi'
+    ? '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>'
+    : '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
+
+  document.getElementById('expTbl').innerHTML = filtered.length ? filtered.map((r,i) => {
+    const statusChip = r.status === 'Shipped'  ? '<span class="chip ch-ship">Shipped</span>'
+      : r.status === 'Urgent'   ? '<span class="chip" style="background:#fce8e6;color:#c5221f;font-weight:700">🔴 Urgent</span>'
+      : r.status === 'Overdue'  ? '<span class="chip ch-late">Overdue</span>'
+      : r.status === 'Booked'   ? '<span class="chip ch-ok">Booked</span>'
+      : r.status === 'Pending'  ? '<span class="chip ch-warn">Pending</span>'
+      : `<span class="chip ch-gray">${r.status||'–'}</span>`;
+    return `<tr>
+      <td>${i+1}</td>
+      <td style="font-weight:600">${r.customer||'–'}</td>
+      <td>${r.country||'–'}</td>
+      <td style="font-size:10px">${r.style||'–'}</td>
+      <td style="font-size:10px">${r.po||'–'}</td>
+      <td style="text-align:right;font-weight:600">${Number(r.qty||0).toLocaleString()}</td>
+      <td>${r.plannedDate||'–'}</td>
+      <td><span class="chip ch-info">${r.transport||'–'}</span></td>
+      <td style="font-size:10px">${r.container||'–'}</td>
+      <td>${statusChip}</td>
+    </tr>`;
+  }).join('') : noData;
 }
 
 function renderUpcoming() {
