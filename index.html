@@ -338,7 +338,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="g2">
           <div class="card">
             <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
-            <div class="card-body"><div style="position:relative;height:180px"><canvas id="monthChart" role="img" aria-label="Biểu đồ nhập hàng theo tháng"></canvas></div></div>
+            <div class="card-body"><div style="position:relative;height:210px"><canvas id="monthChart" role="img" aria-label="Biểu đồ nhập hàng theo tháng"></canvas></div></div>
             <div style="display:flex;gap:16px;padding:0 16px 14px;font-size:11px;color:var(--text2)">
               <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span><span id="legend-ok" data-vi="Đúng hạn" data-en="On time">Đúng hạn</span></span>
               <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span><span id="legend-late" data-vi="Trễ hạn" data-en="Late">Trễ hạn</span></span>
@@ -1065,11 +1065,53 @@ function renderChart(byMonth) {
   try {
     const canvas = document.getElementById('monthChart');
     if (!canvas) return;
-    if (!byMonth?.length) {
-      console.warn('renderChart: byMonth is empty');
-      return;
-    }
+    if (!byMonth?.length) return;
     if (monthChart) { monthChart.destroy(); monthChart = null; }
+
+    // Plugin tự vẽ % lên cột và tóm tắt bên dưới
+    const labelPlugin = {
+      id: 'customLabels',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          meta.data.forEach((bar, index) => {
+            const val = dataset.data[index];
+            if (!val || val < 1) return;
+            const total = chart.data.datasets.reduce((s,d)=>s+(d.data[index]||0),0);
+            const pct = total > 0 ? Math.round(val/total*100) : 0;
+            if (pct < 5) return; // không hiện nếu quá nhỏ
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(pct + '%', bar.x, bar.y + (bar.height||0)/2);
+            ctx.restore();
+          });
+        });
+      },
+      afterDraw(chart) {
+        const ctx = chart.ctx;
+        const xAxis = chart.scales.x;
+        const bottom = chart.chartArea.bottom;
+        chart.data.labels.forEach((label, i) => {
+          const x = xAxis.getPixelForTick(i);
+          const ok   = chart.data.datasets[0].data[i] || 0;
+          const late = chart.data.datasets[1].data[i] || 0;
+          const total = ok + late;
+          if (!total) return;
+          ctx.save();
+          ctx.fillStyle = '#888';
+          ctx.font = '9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillText(`${ok}✓ ${late}✗ / ${total}`, x, bottom + 22);
+          ctx.restore();
+        });
+      }
+    };
+
     monthChart = new Chart(canvas, {
       type:'bar',
       data:{
@@ -1081,6 +1123,7 @@ function renderChart(byMonth) {
       },
       options:{
         responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ bottom: 18 } },
         plugins:{
           legend:{display:false},
           tooltip:{
@@ -1091,17 +1134,18 @@ function renderChart(byMonth) {
                 return `${ctx.dataset.label}: ${ctx.raw} ${currentLang==='vi'?'lô':'lots'} (${pct}%)`;
               },
               footer: function(items) {
-                const total = items.reduce((s,i)=>s+i.raw,0);
+                const total = items.reduce((s,i)=>s+(i.raw||0),0);
                 return currentLang==='vi' ? `Tổng: ${total} lô` : `Total: ${total} lots`;
               }
             }
           }
         },
         scales:{
-          x:{stacked:true, grid:{display:false}, ticks:{font:{size:10}}},
+          x:{stacked:true, grid:{display:false}, ticks:{font:{size:10}, padding:2}},
           y:{stacked:true, grid:{color:'rgba(0,0,0,.05)'}, ticks:{font:{size:10}}}
         }
-      }
+      },
+      plugins:[labelPlugin]
     });
     console.log('Chart rendered with', byMonth.length, 'months:', byMonth.map(m=>m.label).join(', '));
   } catch(e) {
