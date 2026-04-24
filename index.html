@@ -1253,7 +1253,17 @@ async function handleFile(file) {
 async function submitImport() {
   if (!pendingImportRows.length) return;
   try {
-    const res = await api('importExcel', { rows: pendingImportRows }, 'GET');
+    // Gửi từng batch 30 lô để tránh URL quá dài
+    const batchSize = 30;
+    let imported = 0, skipped = 0;
+    for (let i = 0; i < pendingImportRows.length; i += batchSize) {
+      const batch = pendingImportRows.slice(i, i + batchSize);
+      const res = await api('importExcel', { rows: JSON.stringify(batch) }, 'GET');
+      imported += res.imported || 0;
+      skipped  += res.skipped  || 0;
+      showToast(`Đang import... ${Math.min(i+batchSize, pendingImportRows.length)}/${pendingImportRows.length} lô`);
+    }
+    showToast(`✓ Đã import ${imported} lô (bỏ qua ${skipped} trùng)`, 'success');
     showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     document.getElementById('uploadPreview').style.display = 'none';
     pendingImportRows = [];
