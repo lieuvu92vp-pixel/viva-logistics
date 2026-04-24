@@ -1179,7 +1179,7 @@ function renderUpcoming() {
             ${d.customer||'–'} — ${d.country||'–'}
             ${isNext7 ? `<span class="chip ch-ok" style="font-size:9px">${currentLang==='vi'?'7 ngày tới':'Next 7 days'}</span>` : ''}
           </div>
-          <div class="upc-meta">${d.style||'–'} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div>
+          <div class="upc-meta">${d.style||'–'}${d.po && d.po!=='–' ? ' · PO ' + d.po : ''}</div>
         </div>
         <div class="upc-qty">
           <div class="upc-qty-val">${isNaN(qty)||qty===0?'–':qty.toLocaleString()}</div>
