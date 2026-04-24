@@ -1080,13 +1080,25 @@ function renderChart(byMonth) {
             if (!val || val < 1) return;
             const total = chart.data.datasets.reduce((s,d)=>s+(d.data[index]||0),0);
             const pct = total > 0 ? Math.round(val/total*100) : 0;
-            if (pct < 8) return; // không hiện nếu quá nhỏ
+            if (pct < 5) return;
             ctx.save();
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(pct + '%', bar.x, bar.y + (bar.height||0)/2);
+            const barHeight = bar.height || 0;
+            const isSmall = barHeight < 18;
+            if (isSmall) {
+              // Cột nhỏ: hiện % bên ngoài cột, màu theo dataset
+              ctx.fillStyle = dataset.backgroundColor;
+              ctx.font = 'bold 10px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(pct + '%', bar.x, bar.y - 2);
+            } else {
+              // Cột đủ to: hiện % bên trong, màu trắng
+              ctx.fillStyle = '#fff';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(pct + '%', bar.x, bar.y + barHeight/2);
+            }
             ctx.restore();
           });
         });
