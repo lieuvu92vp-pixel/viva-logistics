@@ -1249,11 +1249,9 @@ async function handleFile(file) {
   };
   reader.readAsArrayBuffer(file);
 }
-
 async function submitImport() {
   if (!pendingImportRows.length) return;
   try {
-    // Gửi từng batch 30 lô để tránh URL quá dài
     const batchSize = 10;
     let imported = 0, skipped = 0;
     for (let i = 0; i < pendingImportRows.length; i += batchSize) {
@@ -1264,11 +1262,12 @@ async function submitImport() {
       showToast(`Đang import... ${Math.min(i+batchSize, pendingImportRows.length)}/${pendingImportRows.length} lô`);
     }
     showToast(`✓ Đã import ${imported} lô (bỏ qua ${skipped} trùng)`, 'success');
-    showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     document.getElementById('uploadPreview').style.display = 'none';
     pendingImportRows = [];
     loadImports();
-  } catch(e) { showToast('Lỗi import: ' + e.message, 'error'); }
+  } catch(e) {
+    showToast('Lỗi import: ' + e.message, 'error');
+  }
 }
 
 function formatExcelDate(val) {
