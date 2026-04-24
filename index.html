@@ -1254,7 +1254,7 @@ async function submitImport() {
   if (!pendingImportRows.length) return;
   try {
     // Gửi từng batch 30 lô để tránh URL quá dài
-    const batchSize = 30;
+    const batchSize = 10;
     let imported = 0, skipped = 0;
     for (let i = 0; i < pendingImportRows.length; i += batchSize) {
       const batch = pendingImportRows.slice(i, i + batchSize);
