@@ -372,8 +372,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <!-- ════ IMPORT ════ -->
       <div class="page" id="pg-import">
         <div class="card">
-          <div class="filter-bar">
-            <input class="fb-input" placeholder="Tìm shipper, bill no, CD no..." id="impSearch" oninput="filterImport()">
+          <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:6px;flex:1;min-width:200px">
+              <input class="fb-input" style="flex:1" placeholder="Tìm shipper, bill no, CD no..." id="impSearch" onkeydown="if(event.key==='Enter')filterImport()">
+              <button onclick="filterImport()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">🔍 Tìm</button>
+            </div>
             <select class="fb-select" id="impStatus" onchange="filterImport()">
               <option value="">Tất cả trạng thái</option>
               <option value="OK">OK – Đúng hạn</option>
@@ -385,14 +388,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <option>Express</option><option>AIR</option><option>XNKTC</option>
               <option>FCL</option><option>CFS</option>
             </select>
+            <select class="fb-select" id="impGoods" onchange="filterImport()">
+              <option value="">Tất cả loại hàng</option>
+              <option>FABRIC</option><option>ACCESSORIES</option><option>SAMPLE</option>
+            </select>
             <span class="fb-count" id="impCount"></span>
+            <button onclick="downloadImportTable()" style="padding:6px 12px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap">⬇️ Tải bảng</button>
           </div>
           <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
-            <table class="tbl">
+            <table class="tbl" id="impTable">
               <thead id="th-import"><tr>
-                <th>STT</th><th>Shipper</th><th>Nước</th><th>ETA</th>
-                <th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>
-                <th>Ngày XL</th><th>Trạng thái</th><th>Ghi chú</th>
+                <th>STT</th><th>Shipper</th><th>Nước</th>
+                <th style="cursor:pointer" onclick="sortImport('eta')">ETA ↕</th>
+                <th>Mode</th><th>Loại hàng</th><th>Số Invoice</th>
+                <th>CD No</th><th>CD Date</th>
+                <th>Kiện</th><th>KG</th>
+                <th style="cursor:pointer" onclick="sortImport('arrival')">Về kho ↕</th>
+                <th>Ngày XL</th><th>Trạng thái</th><th>Ghi chú</th><th></th>
               </tr></thead>
               <tbody id="impTbl"></tbody>
             </table>
@@ -435,8 +447,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <!-- ════ EXPORT ════ -->
       <div class="page" id="pg-export">
         <div class="card">
-          <div class="filter-bar">
-            <input class="fb-input" placeholder="Tìm khách hàng, style, PO..." id="expSearch" oninput="filterExport()">
+          <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:6px;flex:1;min-width:200px">
+              <input class="fb-input" style="flex:1" placeholder="Tìm khách hàng, style, PO..." id="expSearch" onkeydown="if(event.key==='Enter')filterExport()">
+              <button onclick="filterExport()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">🔍 Tìm</button>
+            </div>
             <select class="fb-select" id="expStatus" onchange="filterExport()">
               <option value="">Tất cả trạng thái</option>
               <option value="Shipped">Shipped</option>
@@ -445,14 +460,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <option value="Urgent">🔴 Urgent</option>
               <option value="Overdue">Overdue</option>
             </select>
+            <select class="fb-select" id="expTransport" onchange="filterExport()">
+              <option value="">Tất cả vận chuyển</option>
+              <option value="SEA">SEA</option>
+              <option value="AIR">AIR</option>
+              <option value="TRUCK">TRUCK</option>
+            </select>
             <span class="fb-count" id="expCount"></span>
+            <button onclick="downloadExportTable()" style="padding:6px 12px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap">⬇️ Tải bảng</button>
           </div>
           <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
-            <table class="tbl">
+            <table class="tbl" id="expTable">
               <thead id="th-export"><tr>
-                <th>STT</th><th>Khách hàng</th><th>Nước NK</th><th>Factory style</th>
-                <th>PO</th><th>Số lượng PCS</th><th>Ngày xuất dự kiến</th>
-                <th>Mode</th><th>Container</th><th>Trạng thái</th>
+                <th>STT</th><th>Khách hàng</th><th>Nước NK</th><th>Factory Style</th>
+                <th>PO</th><th>Qty PCS</th>
+                <th style="cursor:pointer" onclick="sortExport('planned')">Ngày xuất DK ↕</th>
+                <th style="cursor:pointer" onclick="sortExport('actual')">Ngày xuất TT ↕</th>
+                <th>Mode</th><th>Container</th><th>C/O</th><th>Trạng thái</th><th></th>
               </tr></thead>
               <tbody id="expTbl"></tbody>
             </table>
@@ -1418,63 +1442,99 @@ function renderRecentImports() {
 }
 
 // ══ IMPORTS ══
+let impSortCol = '', impSortDir = 1;
+function sortImport(col) { impSortDir = impSortCol===col ? -impSortDir : 1; impSortCol=col; filterImport(); }
+
 function filterImport() {
-  const q   = (document.getElementById('impSearch')?.value||'').toLowerCase();
-  const st  = document.getElementById('impStatus')?.value||'';
-  const md  = document.getElementById('impMode')?.value||'';
+  const q  = (document.getElementById('impSearch')?.value||'').toLowerCase();
+  const st = document.getElementById('impStatus')?.value||'';
+  const md = document.getElementById('impMode')?.value||'';
+  const gd = document.getElementById('impGoods')?.value||'';
 
-  const filtered = importData.filter(r =>
-    (!q  || [r.shipper,r.billNo,r.cdNo].some(v=>(v||'').toLowerCase().includes(q))) &&
-    (!st || r.status === st) &&
-    (!md || r.shipMode === md)
+  let filtered = importData.filter(r =>
+    (!q  || [r.shipper,r.billNo,r.cdNo,r.invNo,r.vessel,r.country].some(v=>(v||'').toLowerCase().includes(q))) &&
+    (!st || r.status === st) && (!md || r.shipMode === md) &&
+    (!gd || (r.goodsType||'').toUpperCase().includes(gd.toUpperCase()))
   );
-
-  const lbl = currentLang==='vi'
+  if (impSortCol) {
+    filtered.sort((a,b) => {
+      const va = parseDate(a[impSortCol==='eta'?'eta':'arrival'])||new Date(0);
+      const vb = parseDate(b[impSortCol==='eta'?'eta':'arrival'])||new Date(0);
+      return (va-vb)*impSortDir;
+    });
+  }
+  document.getElementById('impCount').textContent = currentLang==='vi'
     ? `Hiển thị ${filtered.length} / ${importData.length} lô`
     : `Showing ${filtered.length} / ${importData.length} lots`;
-  document.getElementById('impCount').textContent = lbl;
-  const noDataImp = currentLang==='vi'
-    ? '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>'
-    : '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
 
   document.getElementById('impTbl').innerHTML = filtered.length ? filtered.map((r,i) => `<tr>
     <td>${i+1}</td>
-    <td class="shipper" title="${r.shipper}">${r.shipper}</td>
-    <td>${r.country}</td><td>${r.eta}</td>
+    <td class="shipper" title="${r.shipper||''}">${r.shipper||'–'}</td>
+    <td>${r.country||'–'}</td>
+    <td>${r.eta||'–'}</td>
     <td><span class="chip ch-info">${r.shipMode||'–'}</span></td>
+    <td style="font-size:10px">${r.goodsType||'–'}</td>
+    <td style="font-size:10px">${r.invNo||'–'}</td>
+    <td style="font-size:10px">${r.cdNo||'–'}</td>
+    <td style="font-size:10px">${r.cdDate||'–'}</td>
     <td style="text-align:right">${r.packages||0}</td>
     <td style="text-align:right">${Number(r.weight||0).toLocaleString()}</td>
     <td>${r.arrival||'–'}</td>
-    <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
+    <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':Number(r.days)>3?'var(--red)':Number(r.days)>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
     <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${r.status||'–'}</span></td>
-    <td style="font-size:10px;color:var(--text3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
-    <td><button onclick="openEditImport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️ Edit</button></td>
-  </tr>`).join('') : noDataImp;
+    <td style="font-size:10px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
+    <td><button onclick="openEditImport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button></td>
+  </tr>`).join('')
+  : `<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
+}
+
+function downloadImportTable() {
+  const q=document.getElementById('impSearch')?.value?.toLowerCase()||'';
+  const st=document.getElementById('impStatus')?.value||'';
+  const md=document.getElementById('impMode')?.value||'';
+  const gd=document.getElementById('impGoods')?.value||'';
+  const filtered = importData.filter(r =>
+    (!q||[r.shipper,r.billNo,r.cdNo,r.invNo].some(v=>(v||'').toLowerCase().includes(q)))&&
+    (!st||r.status===st)&&(!md||r.shipMode===md)&&(!gd||(r.goodsType||'').toUpperCase().includes(gd.toUpperCase()))
+  );
+  const hdrs = ['STT','Shipper','Nước','ETA','Mode','Loại hàng','Số Invoice','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'];
+  const rows = filtered.map((r,i)=>[i+1,r.shipper,r.country,r.eta,r.shipMode,r.goodsType,r.invNo,r.cdNo,r.cdDate,r.packages,r.weight,r.arrival,r.days,r.status,r.reasons].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
+  const csv = [hdrs.join(','),...rows].join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`Import_${new Date().toLocaleDateString('vi')}.csv`; a.click();
 }
 
 // ══ EXPORTS ══
+let expSortCol = '', expSortDir = 1;
+function sortExport(col) { expSortDir = expSortCol===col ? -expSortDir : 1; expSortCol=col; filterExport(); }
+
 function filterExport() {
   const q  = (document.getElementById('expSearch')?.value||'').toLowerCase();
   const st = document.getElementById('expStatus')?.value||'';
-  const filtered = exportData.filter(r =>
-    (!q  || [r.customer,r.style,r.po].some(v=>(v||'').toLowerCase().includes(q))) &&
-    (!st || r.status === st)
+  const tr = document.getElementById('expTransport')?.value||'';
+
+  let filtered = exportData.filter(r =>
+    (!q  || [r.customer,r.style,r.po,r.country].some(v=>(v||'').toLowerCase().includes(q))) &&
+    (!st || r.status === st) &&
+    (!tr || r.transport === tr)
   );
-  const lbl = currentLang==='vi'
+  if (expSortCol) {
+    filtered.sort((a,b) => {
+      const va = parseDate(a[expSortCol==='planned'?'plannedDate':'actualDate'])||new Date(0);
+      const vb = parseDate(b[expSortCol==='planned'?'plannedDate':'actualDate'])||new Date(0);
+      return (va-vb)*expSortDir;
+    });
+  }
+  document.getElementById('expCount').textContent = currentLang==='vi'
     ? `Hiển thị ${filtered.length} / ${exportData.length} lô`
     : `Showing ${filtered.length} / ${exportData.length} lots`;
-  document.getElementById('expCount').textContent = lbl;
-
-  const noData = currentLang==='vi'
-    ? '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>'
-    : '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
 
   document.getElementById('expTbl').innerHTML = filtered.length ? filtered.map((r,i) => {
-    const statusChip = r.status === 'Shipped'  ? '<span class="chip ch-ship">Shipped</span>'
-      : r.status === 'Urgent'   ? '<span class="chip" style="background:#fce8e6;color:#c5221f;font-weight:700">🔴 Urgent</span>'
-      : r.status === 'Overdue'  ? '<span class="chip ch-late">Overdue</span>'
-      : r.status === 'Booked'   ? '<span class="chip ch-ok">Booked</span>'
-      : r.status === 'Pending'  ? '<span class="chip ch-warn">Pending</span>'
+    const statusChip = r.status==='Shipped' ? '<span class="chip ch-ship">Shipped</span>'
+      : r.status==='Urgent'  ? '<span class="chip" style="background:#fce8e6;color:#c5221f;font-weight:700">🔴 Urgent</span>'
+      : r.status==='Overdue' ? '<span class="chip ch-late">Overdue</span>'
+      : r.status==='Booked'  ? '<span class="chip ch-ok">Booked</span>'
+      : r.status==='Pending' ? '<span class="chip ch-warn">Pending</span>'
       : `<span class="chip ch-gray">${r.status||'–'}</span>`;
     return `<tr>
       <td>${i+1}</td>
@@ -1484,12 +1544,27 @@ function filterExport() {
       <td style="font-size:10px">${r.po||'–'}</td>
       <td style="text-align:right;font-weight:600">${Number(r.qty||0).toLocaleString()}</td>
       <td>${r.plannedDate||'–'}</td>
+      <td>${r.actualDate||'–'}</td>
       <td><span class="chip ch-info">${r.transport||'–'}</span></td>
       <td style="font-size:10px">${r.container||'–'}</td>
+      <td style="text-align:center">${r.co&&r.co.toLowerCase()==='x'?'<span class="chip ch-ok" style="font-size:10px">✓ C/O</span>':'<span style="color:var(--text3);font-size:10px">–</span>'}</td>
       <td>${statusChip}</td>
-      <td><button onclick="openEditExport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️ Edit</button></td>
+      <td><button onclick="openEditExport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button></td>
     </tr>`;
-  }).join('') : noData;
+  }).join('')
+  : `<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
+}
+
+function downloadExportTable() {
+  const q=document.getElementById('expSearch')?.value?.toLowerCase()||'';
+  const st=document.getElementById('expStatus')?.value||'';
+  const tr=document.getElementById('expTransport')?.value||'';
+  const filtered=exportData.filter(r=>(!q||[r.customer,r.style,r.po].some(v=>(v||'').toLowerCase().includes(q)))&&(!st||r.status===st)&&(!tr||r.transport===tr));
+  const hdrs=['STT','Khách hàng','Nước NK','Factory Style','PO','Qty PCS','Ngày xuất DK','Ngày xuất TT','Mode','Container','C/O','Trạng thái'];
+  const rows=filtered.map((r,i)=>[i+1,r.customer,r.country,r.style,r.po,r.qty,r.plannedDate,r.actualDate,r.transport,r.container,r.co,r.status].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
+  const csv=[hdrs.join(','),...rows].join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`Loading_Schedule_${new Date().toLocaleDateString('vi')}.csv`; a.click();
 }
 
 function renderUpcoming() {
