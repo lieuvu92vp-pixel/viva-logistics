@@ -1764,8 +1764,8 @@ async function submitNewExport() {
 let _editType = '', _editId = '', _editData = {};
 
 function openEditImport(id) {
-  const r = importData.find(x => x.id === id);
-  if (!r) return;
+  const r = importData.find(x => String(x.id) === String(id));
+  if (!r) { showToast('Không tìm thấy dữ liệu lô nhập', 'error'); return; }
   _editType = 'import'; _editId = id; _editData = r;
   document.getElementById('editModalTitle').textContent = `Chỉnh sửa lô nhập — ${r.shipper}`;
   document.getElementById('editModalBody').innerHTML = `
@@ -1786,8 +1786,8 @@ function openEditImport(id) {
 }
 
 function openEditExport(id) {
-  const r = exportData.find(x => x.id === id);
-  if (!r) return;
+  const r = exportData.find(x => String(x.id) === String(id));
+  if (!r) { showToast('Không tìm thấy dữ liệu lô xuất', 'error'); return; }
   _editType = 'export'; _editId = id; _editData = r;
   document.getElementById('editModalTitle').textContent = `Chỉnh sửa lô xuất — ${r.customer} / ${r.style}`;
   document.getElementById('editModalBody').innerHTML = `
