@@ -475,11 +475,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
             <table class="tbl" id="expTable">
               <thead id="th-export"><tr>
-                <th>STT</th><th>Khách hàng</th><th>Nước NK</th><th>Factory Style</th>
-                <th>PO</th><th>Qty PCS</th>
+                <th>STT</th><th>Khách hàng</th><th>Nước XK</th><th>Mã nhà máy</th>
+                <th>PO</th><th>Số lượng</th>
                 <th style="cursor:pointer" onclick="sortExport('planned')">Ngày xuất DK ↕</th>
                 <th style="cursor:pointer" onclick="sortExport('actual')">Ngày xuất TT ↕</th>
-                <th>Mode</th><th>Container</th><th>C/O</th><th>Trạng thái</th><th></th>
+                <th>Vận chuyển</th><th>Truck-Cont</th><th>C/O</th><th>Trạng thái</th><th></th>
               </tr></thead>
               <tbody id="expTbl"></tbody>
             </table>
@@ -775,8 +775,8 @@ function applyLang() {
       en: ['No.','ETA','Mode','Goods type','Bill No','INV No','CD No','CD Date','Pkgs','KG','Arrival','Days','Status','Note',''],
     },
     'th-export': {
-      vi: ['STT','Khách hàng','Nước NK','Factory Style','PO','Qty PCS','Ngày xuất DK','Ngày xuất TT','Mode','Container','C/O','Trạng thái',''],
-      en: ['No.','Customer','Export country','Factory Style','PO','Qty PCS','Planned date','Actual date','Mode','Container','C/O','Status',''],
+      vi: ['STT','Khách hàng','Nước XK','Mã nhà máy','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Truck-Cont','C/O','Trạng thái',''],
+      en: ['No.','Customer','Export country','Factory Style','PO','Qty PCS','Planned date','Actual date','Transport','Truck-Cont','C/O','Status',''],
     },
     'th-alerts': {
       vi: ['Shipper','Nước','ETA','Mode','Số tờ khai','Kiện','Target','Về kho','Ngày trễ','Lý do'],
