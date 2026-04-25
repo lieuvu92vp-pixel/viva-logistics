@@ -400,7 +400,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <thead id="th-import"><tr>
                 <th>STT</th><th>Shipper</th><th>Nước</th>
                 <th style="cursor:pointer" onclick="sortImport('eta')">ETA ↕</th>
-                <th>Mode</th><th>Loại hàng</th><th>Số Invoice</th>
+                <th>Mode</th><th>Loại hàng</th><th>Bill No</th><th>INV No</th>
                 <th>CD No</th><th>CD Date</th>
                 <th>Kiện</th><th>KG</th>
                 <th style="cursor:pointer" onclick="sortImport('arrival')">Về kho ↕</th>
@@ -1474,6 +1474,7 @@ function filterImport() {
     <td>${r.eta||'–'}</td>
     <td><span class="chip ch-info">${r.shipMode||'–'}</span></td>
     <td style="font-size:10px">${r.goodsType||'–'}</td>
+    <td style="font-size:10px">${r.billNo||'–'}</td>
     <td style="font-size:10px">${r.invNo||'–'}</td>
     <td style="font-size:10px">${r.cdNo||'–'}</td>
     <td style="font-size:10px">${r.cdDate||'–'}</td>
@@ -1485,7 +1486,7 @@ function filterImport() {
     <td style="font-size:10px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
     <td><button onclick="openEditImport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button></td>
   </tr>`).join('')
-  : `<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
+  : `<tr><td colspan="17" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
 }
 
 function downloadImportTable() {
@@ -1497,8 +1498,8 @@ function downloadImportTable() {
     (!q||[r.shipper,r.billNo,r.cdNo,r.invNo].some(v=>(v||'').toLowerCase().includes(q)))&&
     (!st||r.status===st)&&(!md||r.shipMode===md)&&(!gd||(r.goodsType||'').toUpperCase().includes(gd.toUpperCase()))
   );
-  const hdrs = ['STT','Shipper','Nước','ETA','Mode','Loại hàng','Số Invoice','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'];
-  const rows = filtered.map((r,i)=>[i+1,r.shipper,r.country,r.eta,r.shipMode,r.goodsType,r.invNo,r.cdNo,r.cdDate,r.packages,r.weight,r.arrival,r.days,r.status,r.reasons].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
+  const hdrs = ['STT','Shipper','Nước','ETA','Mode','Loại hàng','Bill No','INV No','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'];
+  const rows = filtered.map((r,i)=>[i+1,r.shipper,r.country,r.eta,r.shipMode,r.goodsType,r.billNo,r.invNo,r.cdNo,r.cdDate,r.packages,r.weight,r.arrival,r.days,r.status,r.reasons].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
   const csv = [hdrs.join(','),...rows].join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download=`Import_${new Date().toLocaleDateString('vi')}.csv`; a.click();
@@ -1655,21 +1656,16 @@ async function handleFile(file) {
       etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
       eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
       vessel    : r[idx('VESSEL')]    || '',
-      cdNo      : r[idx("CD_NO")]    || r[idx("CD_No")] || r[idx("CD NO")] || "",
-      cdDate    : r[idx("CD_DATE")]  ? formatExcelDate(r[idx("CD_DATE")]) :
-                  r[idx("CD_Date")] ? formatExcelDate(r[idx("CD_Date")]) :
-                  r[idx("CD DATE")] ? formatExcelDate(r[idx("CD DATE")]) : "",
-      billNo    : r[idx("BILL_NO")]  || r[idx("Bill_No")] || r[idx("BILL")] || "",
-      packages  : r[idx("PACKAGES")] || r[idx("PACKAGE")] || 0,
-      weight    : r[idx("WEIGHT_KG")]|| r[idx("WEIGHT")]  || r[idx("WEIGH")] || 0,
-      arrival   : r[idx("ARRIVAL_DATE")] ? formatExcelDate(r[idx("ARRIVAL_DATE")]) :
-                  r[idx("ARRIVAL")]      ? formatExcelDate(r[idx("ARRIVAL")])      : "",
-      shipMode  : r[idx("SHIP_MODE")]|| r[idx("SHIP MODE")] || "",
-      goodsType : r[idx("GOODS_TYPE")]|| r[idx("GOODS")]   || "",
-      invNo     : r[idx("INV_NO")]   || r[idx("INV")]       || "",
-      container : r[idx("CONTAINER")]|| r[idx("TRUCK-CONT")]|| r[idx("TRUCK_CONT")] || "",
-      forwarder : r[idx("FORWARDER")]|| r[idx("FORWARD")]   || "",
-      reasons   : r[idx("REASON")]   || "",
+      cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
+      billNo    : r[idx('BILL')]      || '',
+      packages  : r[idx('PACKAGE')]   || 0,
+      weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
+      arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
+      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
+      goodsType : r[idx('GOODS')]     || '',
+      invNo     : r[idx('INV')]       || '',
+      forwarder : r[idx('FORWARD')]   || '',
+      reasons   : r[idx('REASON')]    || '',
     })).filter(r => r.shipper);
 
     // Show preview
