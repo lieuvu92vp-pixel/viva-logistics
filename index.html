@@ -1499,9 +1499,20 @@ function downloadImportTable() {
     (!q||[r.shipper,r.country,r.billNo,r.cdNo,r.invNo,r.container,r.forwarder,r.vessel,r.goodsType].some(v=>String(v||'').toLowerCase().includes(q)))&&
     (!st||r.status===st)&&(!md||r.shipMode===md)&&(!gd||(r.goodsType||'').toUpperCase().includes(gd.toUpperCase()))
   );
+  // Hàm format cell: số dài > 10 ký tự wrap bằng ="..." để Excel không đổi sang scientific notation
+  const fmtCell = v => {
+    const s = (v||'').toString().replace(/"/g,'""');
+    // Các trường số dài (CD No, Bill No, INV No, Container) cần giữ nguyên dạng text
+    if (/^\d{10,}$/.test(s)) return '="' + s + '"';
+    return '"' + s + '"';
+  };
   const hdrs = ['STT','Shipper','Nước','ETA','Mode','Loại hàng','Bill No','INV No','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'];
-  const rows = filtered.map((r,i)=>[i+1,r.shipper,r.country,r.eta,r.shipMode,r.goodsType,r.billNo,r.invNo,r.cdNo,r.cdDate,r.packages,r.weight,r.arrival,r.days,r.status,r.reasons].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
-  const csv = [hdrs.join(','),...rows].join('\n');
+  const rows = filtered.map((r,i) => [
+    i+1, r.shipper, r.country, r.eta, r.shipMode, r.goodsType,
+    r.billNo, r.invNo, r.cdNo, r.cdDate,
+    r.packages, r.weight, r.arrival, r.days, r.status, r.reasons
+  ].map(fmtCell).join(','));
+  const csv = [hdrs.map(h=>'"'+h+'"').join(','), ...rows].join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download=`Import_${new Date().toLocaleDateString('vi')}.csv`; a.click();
 }
