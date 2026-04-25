@@ -424,7 +424,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <div class="card-head"><div class="card-title" id="ct-alertlist" data-vi="Danh sách lô đang trễ — cần xử lý" data-en="Late shipments — action needed">Danh sách lô đang trễ — cần xử lý</div><div class="card-sub" id="cs-alertsort" data-vi="Sắp xếp theo số ngày trễ" data-en="Sorted by days late">Sắp xếp theo số ngày trễ</div></div>
           <div class="tbl-wrap"><table class="tbl">
-            <thead id="th-alerts"><tr><th>Shipper</th><th>Nước</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>Ngày trễ</th><th>Lý do</th></tr></thead>
+            <thead id="th-alerts"><tr><th>Shipper</th><th>Nước</th><th>ETA</th><th>Mode</th><th>Số tờ khai</th><th>Kiện</th><th>Target</th><th>Về kho</th><th>Ngày trễ</th><th>Lý do</th></tr></thead>
             <tbody id="alertTbl"></tbody>
           </table></div>
         </div>
@@ -634,8 +634,8 @@ function applyLang() {
       en: ['No.','Customer','Export country','Factory style','PO','Qty PCS','Planned date','Mode','Container','Status'],
     },
     'th-alerts': {
-      vi: ['Shipper','Nước','ETA','Mode','Kiện','Ngày trễ','Lý do'],
-      en: ['Shipper','Country','ETA','Mode','Pkgs','Days late','Reason'],
+      vi: ['Shipper','Nước','ETA','Mode','Số tờ khai','Kiện','Target','Về kho','Ngày trễ','Lý do'],
+      en: ['Shipper','Country','ETA','Mode','CD No','Pkgs','Target','Arrival','Days late','Reason'],
     },
   };
   Object.entries(tblHeaders).forEach(([id, hdrs]) => {
@@ -1121,10 +1121,13 @@ function renderAlerts(alerts) {
     <td>${r.country||'–'}</td>
     <td>${r.eta||'–'}</td>
     <td><span class="chip ch-info">${r.shipMode||'–'}</span></td>
+    <td style="font-size:10px;color:var(--text2)">${r.cdNo||'–'}</td>
     <td>${r.packages||0}</td>
+    <td style="text-align:center">${r.target||'–'}</td>
+    <td style="color:${r.arrival?'var(--text)':'var(--text3)'}">${r.arrival||'Chưa về'}</td>
     <td style="font-weight:600;color:var(--red)">${r.days||'–'} ${currentLang==='vi'?'ngày':'days'}</td>
-    <td style="font-size:10px;color:var(--text2)">${r.reasons||'–'}</td>
-  </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có lô trễ':'No late shipments'}</td></tr>`;
+    <td style="font-size:10px;color:var(--text2);max-width:200px">${r.reasons||'–'}</td>
+  </tr>`).join('') || `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có lô trễ':'No late shipments'}</td></tr>`;
 }
 
 function renderChart(byMonth) {
