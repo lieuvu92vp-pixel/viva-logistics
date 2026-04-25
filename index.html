@@ -476,10 +476,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <table class="tbl" id="expTable">
               <thead id="th-export"><tr>
                 <th>STT</th><th>Khách hàng</th><th>Nước XK</th><th>Mã nhà máy</th>
-                <th>PO</th><th>Số lượng</th>
+                <th>HQ Code</th><th>Cust. Code</th>
+                <th>PO</th><th style="text-align:right">Số lượng</th>
                 <th style="cursor:pointer" onclick="sortExport('planned')">Ngày xuất DK ↕</th>
                 <th style="cursor:pointer" onclick="sortExport('actual')">Ngày xuất TT ↕</th>
-                <th>Vận chuyển</th><th>Truck-Cont</th><th>C/O</th><th>Trạng thái</th><th></th>
+                <th>Vận chuyển</th>
+                <th>Cut SI</th><th>Cut CY/CFS</th>
+                <th>Truck Arr.</th><th>Truck Dep.</th>
+                <th>Truck-Cont</th><th>Cont. Seal</th>
+                <th>C/O</th><th>Trạng thái</th><th>Ghi chú</th><th></th>
               </tr></thead>
               <tbody id="expTbl"></tbody>
             </table>
@@ -775,8 +780,8 @@ function applyLang() {
       en: ['No.','ETA','Mode','Goods type','Bill No','INV No','CD No','CD Date','Pkgs','KG','Arrival','Days','Status','Note',''],
     },
     'th-export': {
-      vi: ['STT','Khách hàng','Nước XK','Mã nhà máy','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Truck-Cont','C/O','Trạng thái',''],
-      en: ['No.','Customer','Export country','Factory Style','PO','Qty PCS','Planned date','Actual date','Transport','Truck-Cont','C/O','Status',''],
+      vi: ['STT','Khách hàng','Nước XK','Mã nhà máy','HQ Code','Cust. Code','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Cut SI','Cut CY/CFS','Truck Arr.','Truck Dep.','Truck-Cont','Cont. Seal','C/O','Trạng thái','Ghi chú',''],
+      en: ['No.','Customer','Export country','Factory Style','HQ Code','Cust. Code','PO','Qty PCS','Planned date','Actual date','Transport','Cut SI','Cut CY/CFS','Truck Arr.','Truck Dep.','Truck-Cont','Cont. Seal','C/O','Status','Remarks',''],
     },
     'th-alerts': {
       vi: ['Shipper','Nước','ETA','Mode','Số tờ khai','Kiện','Target','Về kho','Ngày trễ','Lý do'],
@@ -1549,23 +1554,34 @@ function filterExport() {
       : r.status==='Booked'  ? '<span class="chip ch-ok">Booked</span>'
       : r.status==='Pending' ? '<span class="chip ch-warn">Pending</span>'
       : `<span class="chip ch-gray">${r.status||'–'}</span>`;
+    const coChip = r.co&&['x','√','v','1','true','yes'].includes(String(r.co).toLowerCase().trim())
+      ? '<span class="chip ch-ok" style="font-size:10px">✓</span>'
+      : '<span style="color:var(--text3);font-size:10px">–</span>';
     return `<tr>
-      <td>${i+1}</td>
-      <td style="font-weight:600">${r.customer||'–'}</td>
-      <td>${r.country||'–'}</td>
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td style="font-weight:600;font-size:11px">${r.customer||'–'}</td>
+      <td style="font-size:11px">${r.country||'–'}</td>
       <td style="font-size:10px">${r.style||'–'}</td>
+      <td style="font-size:10px;color:var(--text2)">${r.hqCode||'–'}</td>
+      <td style="font-size:10px;color:var(--text2)">${r.customerCode||'–'}</td>
       <td style="font-size:10px">${r.po||'–'}</td>
       <td style="text-align:right;font-weight:600">${Number(r.qty||0).toLocaleString()}</td>
-      <td>${r.plannedDate||'–'}</td>
-      <td>${r.actualDate||'–'}</td>
+      <td style="font-size:11px">${r.plannedDate||'–'}</td>
+      <td style="font-size:11px">${r.actualDate||'–'}</td>
       <td><span class="chip ch-info">${r.transport||'–'}</span></td>
-      <td style="font-size:10px">${r.container||'–'}</td>
-      <td style="text-align:center">${r.co&&['x','√','v','1','true','yes'].includes(String(r.co).toLowerCase().trim())?'<span class="chip ch-ok" style="font-size:10px">✓</span>':'<span style="color:var(--text3);font-size:10px">–</span>'}</td>
+      <td style="font-size:10px;color:var(--text2)">${r.cutSI||'–'}</td>
+      <td style="font-size:10px;color:var(--text2)">${r.cutCY||'–'}</td>
+      <td style="font-size:10px;color:var(--text2)">${r.truckArr||'–'}</td>
+      <td style="font-size:10px;color:var(--text2)">${r.truckDep||'–'}</td>
+      <td style="font-size:10px;font-weight:600">${r.container||'–'}</td>
+      <td style="font-size:10px;color:var(--text2)">${r.containerSeal||'–'}</td>
+      <td style="text-align:center">${coChip}</td>
       <td>${statusChip}</td>
+      <td style="font-size:10px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.remarks||''}">${r.remarks||'–'}</td>
       <td><button onclick="openEditExport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button></td>
     </tr>`;
   }).join('')
-  : `<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
+  : `<tr><td colspan="21" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
 }
 
 function downloadExportTable() {
@@ -1573,8 +1589,8 @@ function downloadExportTable() {
   const st=document.getElementById('expStatus')?.value||'';
   const tr=document.getElementById('expTransport')?.value||'';
   const filtered=exportData.filter(r=>(!q||[r.customer,r.style,r.po].some(v=>(v||'').toLowerCase().includes(q)))&&(!st||r.status===st)&&(!tr||r.transport===tr));
-  const hdrs=['STT','Khách hàng','Nước NK','Factory Style','PO','Qty PCS','Ngày xuất DK','Ngày xuất TT','Mode','Container','C/O','Trạng thái'];
-  const rows=filtered.map((r,i)=>[i+1,r.customer,r.country,r.style,r.po,r.qty,r.plannedDate,r.actualDate,r.transport,r.container,r.co,r.status].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
+  const hdrs=['STT','Khách hàng','Nước XK','Mã nhà máy','HQ Code','Cust. Code','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Cut SI','Cut CY/CFS','Truck Arrival','Truck Departure','Truck-Cont','Cont. Seal','C/O','Trạng thái','Ghi chú'];
+  const rows=filtered.map((r,i)=>[i+1,r.customer,r.country,r.style,r.hqCode,r.customerCode,r.po,r.qty,r.plannedDate,r.actualDate,r.transport,r.cutSI,r.cutCY,r.truckArr,r.truckDep,r.container,r.containerSeal,r.co,r.status,r.remarks].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
   const csv=[hdrs.join(','),...rows].join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download=`Loading_Schedule_${new Date().toLocaleDateString('vi')}.csv`; a.click();
@@ -1892,23 +1908,60 @@ function openEditExport(id) {
   if (!r) { showToast('Không tìm thấy dữ liệu lô xuất', 'error'); return; }
   _editType = 'export'; _editId = id; _editData = r;
   document.getElementById('editModalTitle').textContent = `Chỉnh sửa lô xuất — ${r.customer} / ${r.style}`;
+
+  // Tạo danh sách gợi ý từ dữ liệu hiện có
+  const customers = [...new Set(exportData.map(x=>x.customer).filter(Boolean))].sort();
+  const countries = [...new Set(exportData.map(x=>x.country).filter(Boolean))].sort();
+
   document.getElementById('editModalBody').innerHTML = `
+    <datalist id="dl_customers">${customers.map(c=>`<option value="${c}">`).join('')}</datalist>
+    <datalist id="dl_countries">${countries.map(c=>`<option value="${c}">`).join('')}</datalist>
     <div class="form-grid">
-      <div class="f-group"><label>Khách hàng</label><input class="f-inp" id="em_customer" value="${r.customer||''}"></div>
-      <div class="f-group"><label>Nước NK</label><input class="f-inp" id="em_country" value="${r.country||''}"></div>
-      <div class="f-group"><label>Factory Style</label><input class="f-inp" id="em_style" value="${r.style||''}"></div>
-      <div class="f-group"><label>PO</label><input class="f-inp" id="em_po" value="${r.po||''}"></div>
-      <div class="f-group"><label>Số lượng PCS</label><input class="f-inp" type="number" id="em_qty" value="${r.qty||0}"></div>
-      <div class="f-group"><label>Transport</label><select class="f-inp" id="em_transport">
-        ${['SEA','AIR','TRUCK'].map(m=>`<option ${r.transport===m?'selected':''}>${m}</option>`).join('')}
-      </select></div>
-      <div class="f-group"><label>Ngày xuất dự kiến</label><input class="f-inp" type="date" id="em_planned" value="${toInputDate(r.plannedDate)}"></div>
-      <div class="f-group"><label>Ngày xuất thực tế</label><input class="f-inp" type="date" id="em_actual" value="${toInputDate(r.actualDate)}"></div>
-      <div class="f-group"><label>Container</label><input class="f-inp" id="em_container" value="${r.container||''}"></div>
-      <div class="f-group"><label>Status</label><select class="f-inp" id="em_status">
-        ${['Shipped','Booked','Pending','Urgent','Overdue'].map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}
-      </select></div>
-      <div class="f-group f-full"><label>Ghi chú</label><input class="f-inp" id="em_remarks" value="${r.remarks||''}"></div>
+      <div class="f-group"><label>Khách hàng</label>
+        <input class="f-inp" id="em_customer" value="${r.customer||''}" list="dl_customers" autocomplete="off"></div>
+      <div class="f-group"><label>Nước XK</label>
+        <input class="f-inp" id="em_country" value="${r.country||''}" list="dl_countries" autocomplete="off"></div>
+      <div class="f-group"><label>Mã nhà máy (Factory Style)</label>
+        <input class="f-inp" id="em_style" value="${r.style||''}"></div>
+      <div class="f-group"><label>HQ Code</label>
+        <input class="f-inp" id="em_hqcode" value="${r.hqCode||''}"></div>
+      <div class="f-group"><label>Customer Code</label>
+        <input class="f-inp" id="em_custcode" value="${r.customerCode||''}"></div>
+      <div class="f-group"><label>PO</label>
+        <input class="f-inp" id="em_po" value="${r.po||''}"></div>
+      <div class="f-group"><label>Số lượng PCS</label>
+        <input class="f-inp" type="number" id="em_qty" value="${r.qty||0}"></div>
+      <div class="f-group"><label>Vận chuyển</label>
+        <select class="f-inp" id="em_transport">
+          ${['SEA','AIR','TRUCK'].map(m=>`<option ${r.transport===m?'selected':''}>${m}</option>`).join('')}
+        </select></div>
+      <div class="f-group"><label>Ngày xuất dự kiến</label>
+        <input class="f-inp" type="date" id="em_planned" value="${toInputDate(r.plannedDate)}"></div>
+      <div class="f-group"><label>Ngày xuất thực tế</label>
+        <input class="f-inp" type="date" id="em_actual" value="${toInputDate(r.actualDate)}"></div>
+      <div class="f-group"><label>Cut SI</label>
+        <input class="f-inp" type="date" id="em_cutsi" value="${toInputDate(r.cutSI||'')}"></div>
+      <div class="f-group"><label>Cut CY/CFS</label>
+        <input class="f-inp" type="date" id="em_cutcy" value="${toInputDate(r.cutCY||'')}"></div>
+      <div class="f-group"><label>Truck Arrival</label>
+        <input class="f-inp" type="date" id="em_truckarr" value="${toInputDate(r.truckArr||'')}"></div>
+      <div class="f-group"><label>Truck Departure</label>
+        <input class="f-inp" type="date" id="em_truckdep" value="${toInputDate(r.truckDep||'')}"></div>
+      <div class="f-group"><label>Truck-Cont</label>
+        <input class="f-inp" id="em_container" value="${r.container||''}"></div>
+      <div class="f-group"><label>Container Seal</label>
+        <input class="f-inp" id="em_contseal" value="${r.containerSeal||''}"></div>
+      <div class="f-group"><label>C/O</label>
+        <select class="f-inp" id="em_co">
+          <option value="">– Không</option>
+          <option value="√" ${r.co==='√'?'selected':''}>✓ Có C/O</option>
+        </select></div>
+      <div class="f-group"><label>Trạng thái</label>
+        <select class="f-inp" id="em_status">
+          ${['Shipped','Booked','Pending','Urgent','Overdue'].map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}
+        </select></div>
+      <div class="f-group f-full"><label>Ghi chú</label>
+        <input class="f-inp" id="em_remarks" value="${r.remarks||''}"></div>
     </div>`;
   document.getElementById('editModal').style.display = 'flex';
 }
@@ -1945,18 +1998,26 @@ async function saveEdit() {
       await loadImports();
     } else {
       await api('updateExport', {
-        recordId : _editId,
-        customer : document.getElementById('em_customer').value,
-        country  : document.getElementById('em_country').value,
-        style    : document.getElementById('em_style').value,
-        po       : document.getElementById('em_po').value,
-        qty      : document.getElementById('em_qty').value,
-        transport: document.getElementById('em_transport').value,
-        planned  : document.getElementById('em_planned').value,
-        actual   : document.getElementById('em_actual').value,
-        container: document.getElementById('em_container').value,
-        status   : document.getElementById('em_status').value,
-        remarks  : document.getElementById('em_remarks').value,
+        recordId    : _editId,
+        customer    : document.getElementById('em_customer').value,
+        country     : document.getElementById('em_country').value,
+        style       : document.getElementById('em_style').value,
+        hqCode      : document.getElementById('em_hqcode').value,
+        customerCode: document.getElementById('em_custcode').value,
+        po          : document.getElementById('em_po').value,
+        qty         : document.getElementById('em_qty').value,
+        transport   : document.getElementById('em_transport').value,
+        planned     : document.getElementById('em_planned').value,
+        actual      : document.getElementById('em_actual').value,
+        cutSI       : document.getElementById('em_cutsi').value,
+        cutCY       : document.getElementById('em_cutcy').value,
+        truckArr    : document.getElementById('em_truckarr').value,
+        truckDep    : document.getElementById('em_truckdep').value,
+        container   : document.getElementById('em_container').value,
+        containerSeal: document.getElementById('em_contseal').value,
+        co          : document.getElementById('em_co').value,
+        status      : document.getElementById('em_status').value,
+        remarks     : document.getElementById('em_remarks').value,
       }, 'GET');
       showToast('✓ Đã cập nhật lô xuất', 'success');
       closeEditModal();
