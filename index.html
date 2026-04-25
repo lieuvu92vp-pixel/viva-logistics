@@ -1246,7 +1246,11 @@ function filterImport() {
     ? `Hiển thị ${filtered.length} / ${importData.length} lô`
     : `Showing ${filtered.length} / ${importData.length} lots`;
   document.getElementById('impCount').textContent = lbl;
-  document.getElementById('impTbl').innerHTML = filtered.map((r,i) => `<tr>
+  const noDataImp = currentLang==='vi'
+    ? '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>'
+    : '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
+
+  document.getElementById('impTbl').innerHTML = filtered.length ? filtered.map((r,i) => `<tr>
     <td>${i+1}</td>
     <td class="shipper" title="${r.shipper}">${r.shipper}</td>
     <td>${r.country}</td><td>${r.eta}</td>
@@ -1257,7 +1261,7 @@ function filterImport() {
     <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
     <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${r.status||'–'}</span></td>
     <td style="font-size:10px;color:var(--text3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
-  </tr>`).join('') || currentLang==="vi"?'<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">Không có dữ liệu</td></tr>':'<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
+  </tr>`).join('') : noDataImp;
 }
 
 // ══ EXPORTS ══
