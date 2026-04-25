@@ -374,7 +374,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
             <div style="display:flex;gap:6px;flex:1;min-width:200px">
-              <input class="fb-input" style="flex:1" placeholder="Tìm bill no, CD no, INV no, container..." id="impSearch" oninput="filterImport()" onkeydown="if(event.key==='Enter')filterImport()">
+              <input class="fb-input" style="flex:1" placeholder="Tìm bill no, INV no, CD no, container..." id="impSearch" oninput="filterImport()" onkeydown="if(event.key==='Enter')filterImport()">
               <button onclick="filterImport()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">🔍 Tìm</button>
             </div>
             <select class="fb-select" id="impStatus" onchange="filterImport()">
@@ -407,8 +407,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <th style="text-align:right">KG</th>
                 <th style="cursor:pointer" onclick="sortImport('arrival')">Về kho ↕</th>
                 <th style="text-align:center">Ngày XL</th>
-                <th>Trạng thái</th>
-                <th>Ghi chú</th><th></th>
+                <th>Trạng thái</th><th>Ghi chú</th><th></th>
               </tr></thead>
               <tbody id="impTbl"></tbody>
             </table>
@@ -772,8 +771,8 @@ function applyLang() {
   // 4. Table headers
   const tblHeaders = {
     'th-import': {
-      vi: ['STT','Shipper','Nước','ETA','Mode','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'],
-      en: ['No.','Shipper','Country','ETA','Mode','Pkgs','KG','Arrival','Days','Status','Note'],
+      vi: ['STT','ETA','Mode','Loại hàng','Bill No','INV No','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú',''],
+      en: ['No.','ETA','Mode','Goods type','Bill No','INV No','CD No','CD Date','Pkgs','KG','Arrival','Days','Status','Note',''],
     },
     'th-export': {
       vi: ['STT','Khách hàng','Nước NK','Factory style','PO','Số lượng PCS','Ngày xuất dự kiến','Mode','Container','Trạng thái'],
@@ -1497,7 +1496,7 @@ function downloadImportTable() {
   const md=document.getElementById('impMode')?.value||'';
   const gd=document.getElementById('impGoods')?.value||'';
   const filtered = importData.filter(r =>
-    (!q||[r.shipper,r.billNo,r.cdNo,r.invNo,r.container,r.forwarder].some(v=>(v||'').toLowerCase().includes(q)))&&
+    (!q||[r.shipper,r.billNo,r.cdNo,r.invNo].some(v=>(v||'').toLowerCase().includes(q)))&&
     (!st||r.status===st)&&(!md||r.shipMode===md)&&(!gd||(r.goodsType||'').toUpperCase().includes(gd.toUpperCase()))
   );
   const hdrs = ['STT','Shipper','Nước','ETA','Mode','Loại hàng','Bill No','INV No','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'];
