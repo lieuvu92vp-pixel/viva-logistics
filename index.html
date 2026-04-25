@@ -936,6 +936,7 @@ async function loadImports() {
   }
   filterImport();
   populateShipperList();
+  renderAlerts(); // Cập nhật cảnh báo từ importData
 }
 
 async function loadExports() {
@@ -1040,25 +1041,39 @@ function renderKPIFallback() {
 }
 
 function renderAlerts(alerts) {
-  if (!alerts?.length) return;
+  // Lấy từ importData đã load — lô có status NOT OK
+  const lateRows = importData
+    .filter(r => r.status === 'NOT OK')
+    .sort((a, b) => (Number(b.days)||0) - (Number(a.days)||0));
+
+  const count = lateRows.length;
   const banner = document.getElementById('dashAlert');
-  banner.style.display = 'flex';
-  document.getElementById('dashAlertText').innerHTML =
-    `<b>${alerts.length} lô nhập đang trễ hạn</b> — ` +
-    alerts.slice(0,3).map(a => a.shipper + ' (' + a.daysSince + ' ngày)').join(' · ') +
-    (alerts.length > 3 ? ` và ${alerts.length-3} lô khác` : '');
-  document.getElementById('alertBadge').textContent = alerts.length;
-  document.getElementById('alertBadge').style.display = 'inline';
-  // Alert page table
-  document.getElementById('alertsBannerText').innerHTML = `<b>${alerts.length} lô trễ hạn</b> — cần kiểm tra và cập nhật trạng thái`;
-  document.getElementById('alertTbl').innerHTML = alerts.map(a => `<tr>
-    <td class="shipper">${a.shipper}</td>
-    <td>${a.country}</td><td>${a.eta}</td>
-    <td><span class="chip ch-info">${a.mode}</span></td>
-    <td>${a.packages}</td>
-    <td style="font-weight:600;color:var(--red)">${a.daysSince} ngày</td>
-    <td style="font-size:10px;color:var(--text2)">${a.reasons||'–'}</td>
-  </tr>`).join('');
+  if (count > 0) {
+    banner.style.display = 'flex';
+    document.getElementById('dashAlertText').innerHTML =
+      `<b>${count} lô nhập đang trễ hạn</b> — ` +
+      lateRows.slice(0,3).map(a => `${a.shipper} (${a.days} ngày)`).join(' · ') +
+      (count > 3 ? ` và ${count-3} lô khác` : '');
+    document.getElementById('alertBadge').textContent = count;
+    document.getElementById('alertBadge').style.display = 'inline';
+  }
+
+  // Bảng trang cảnh báo
+  const alertTbl = document.getElementById('alertTbl');
+  if (!alertTbl) return;
+
+  const bannerText = document.getElementById('alertsBannerText');
+  if (bannerText) bannerText.innerHTML = `<b>${count} lô trễ hạn</b> — cần kiểm tra và cập nhật trạng thái`;
+
+  alertTbl.innerHTML = lateRows.map(r => `<tr>
+    <td class="shipper">${r.shipper||'–'}</td>
+    <td>${r.country||'–'}</td>
+    <td>${r.eta||'–'}</td>
+    <td><span class="chip ch-info">${r.shipMode||'–'}</span></td>
+    <td>${r.packages||0}</td>
+    <td style="font-weight:600;color:var(--red)">${r.days||'–'} ${currentLang==='vi'?'ngày':'days'}</td>
+    <td style="font-size:10px;color:var(--text2)">${r.reasons||'–'}</td>
+  </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có lô trễ':'No late shipments'}</td></tr>`;
 }
 
 function renderChart(byMonth) {
