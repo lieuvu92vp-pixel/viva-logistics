@@ -1655,16 +1655,21 @@ async function handleFile(file) {
       etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
       eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
       vessel    : r[idx('VESSEL')]    || '',
-      cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
-      billNo    : r[idx('BILL')]      || '',
-      packages  : r[idx('PACKAGE')]   || 0,
-      weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
-      arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
-      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
-      goodsType : r[idx('GOODS')]     || '',
-      invNo     : r[idx('INV')]       || '',
-      forwarder : r[idx('FORWARD')]   || '',
-      reasons   : r[idx('REASON')]    || '',
+      cdNo      : r[idx("CD_NO")]    || r[idx("CD_No")] || r[idx("CD NO")] || "",
+      cdDate    : r[idx("CD_DATE")]  ? formatExcelDate(r[idx("CD_DATE")]) :
+                  r[idx("CD_Date")] ? formatExcelDate(r[idx("CD_Date")]) :
+                  r[idx("CD DATE")] ? formatExcelDate(r[idx("CD DATE")]) : "",
+      billNo    : r[idx("BILL_NO")]  || r[idx("Bill_No")] || r[idx("BILL")] || "",
+      packages  : r[idx("PACKAGES")] || r[idx("PACKAGE")] || 0,
+      weight    : r[idx("WEIGHT_KG")]|| r[idx("WEIGHT")]  || r[idx("WEIGH")] || 0,
+      arrival   : r[idx("ARRIVAL_DATE")] ? formatExcelDate(r[idx("ARRIVAL_DATE")]) :
+                  r[idx("ARRIVAL")]      ? formatExcelDate(r[idx("ARRIVAL")])      : "",
+      shipMode  : r[idx("SHIP_MODE")]|| r[idx("SHIP MODE")] || "",
+      goodsType : r[idx("GOODS_TYPE")]|| r[idx("GOODS")]   || "",
+      invNo     : r[idx("INV_NO")]   || r[idx("INV")]       || "",
+      container : r[idx("CONTAINER")]|| r[idx("TRUCK-CONT")]|| r[idx("TRUCK_CONT")] || "",
+      forwarder : r[idx("FORWARDER")]|| r[idx("FORWARD")]   || "",
+      reasons   : r[idx("REASON")]   || "",
     })).filter(r => r.shipper);
 
     // Show preview
