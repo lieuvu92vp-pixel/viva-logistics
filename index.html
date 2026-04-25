@@ -1044,7 +1044,7 @@ function renderAlerts(alerts) {
   // Lấy từ importData đã load — lô có status NOT OK
   const lateRows = importData
     .filter(r => r.status === 'NOT OK')
-    .sort((a, b) => (Number(b.days)||0) - (Number(a.days)||0));
+    .sort((a, b) => (parseDate(b.eta)||0) - (parseDate(a.eta)||0));
 
   const count = lateRows.length;
   const banner = document.getElementById('dashAlert');
