@@ -374,7 +374,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
             <div style="display:flex;gap:6px;flex:1;min-width:200px">
-              <input class="fb-input" style="flex:1" placeholder="Tìm shipper, bill no, CD no..." id="impSearch" onkeydown="if(event.key==='Enter')filterImport()">
+              <input class="fb-input" style="flex:1" placeholder="Tìm shipper, bill no, CD no..." id="impSearch" oninput="filterImport()" onkeydown="if(event.key==='Enter')filterImport()">
               <button onclick="filterImport()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">🔍 Tìm</button>
             </div>
             <select class="fb-select" id="impStatus" onchange="filterImport()">
@@ -449,7 +449,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
             <div style="display:flex;gap:6px;flex:1;min-width:200px">
-              <input class="fb-input" style="flex:1" placeholder="Tìm khách hàng, style, PO..." id="expSearch" onkeydown="if(event.key==='Enter')filterExport()">
+              <input class="fb-input" style="flex:1" placeholder="Tìm khách hàng, style, PO..." id="expSearch" oninput="filterExport()" onkeydown="if(event.key==='Enter')filterExport()">
               <button onclick="filterExport()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">🔍 Tìm</button>
             </div>
             <select class="fb-select" id="expStatus" onchange="filterExport()">
