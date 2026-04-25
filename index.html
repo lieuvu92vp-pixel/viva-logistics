@@ -1455,7 +1455,7 @@ function filterImport() {
   const gd = document.getElementById('impGoods')?.value||'';
 
   let filtered = importData.filter(r =>
-    (!q  || [r.shipper,r.billNo,r.cdNo,r.invNo,r.container,r.forwarder,r.vessel].some(v=>(v||'').toLowerCase().includes(q))) &&
+    (!q  || [r.shipper,r.country,r.billNo,r.cdNo,r.invNo,r.container,r.forwarder,r.vessel,r.goodsType,r.shipMode].some(v=>String(v||'').toLowerCase().includes(q))) &&
     (!st || r.status === st) && (!md || r.shipMode === md) &&
     (!gd || (r.goodsType||'').toUpperCase().includes(gd.toUpperCase()))
   );
@@ -1496,7 +1496,7 @@ function downloadImportTable() {
   const md=document.getElementById('impMode')?.value||'';
   const gd=document.getElementById('impGoods')?.value||'';
   const filtered = importData.filter(r =>
-    (!q||[r.shipper,r.billNo,r.cdNo,r.invNo].some(v=>(v||'').toLowerCase().includes(q)))&&
+    (!q||[r.shipper,r.country,r.billNo,r.cdNo,r.invNo,r.container,r.forwarder,r.vessel,r.goodsType].some(v=>String(v||'').toLowerCase().includes(q)))&&
     (!st||r.status===st)&&(!md||r.shipMode===md)&&(!gd||(r.goodsType||'').toUpperCase().includes(gd.toUpperCase()))
   );
   const hdrs = ['STT','Shipper','Nước','ETA','Mode','Loại hàng','Bill No','INV No','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú'];
