@@ -612,8 +612,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 </div>
                 <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">📅 Ngày tháng</div>
                 <div class="form-grid">
-                  <div class="f-group"><label>Ngày xuất dự kiến *</label><input type="date" id="fe_planned"></div>
-                  <div class="f-group"><label>Ngày xuất thực tế</label><input type="date" id="fe_actual"></div>
+                  <div class="f-group"><label>Ngày xuất dự kiến *</label><input type="date" id="fe_planned" onchange="autoExportStatus()"></div>
+                  <div class="f-group"><label>Ngày xuất thực tế</label><input type="date" id="fe_actual" onchange="autoExportStatus()"></div>
                   <div class="f-group"><label>Cut SI</label><input type="date" id="fe_cutsi"></div>
                   <div class="f-group"><label>Cut CY</label><input type="date" id="fe_cutcy"></div>
                   <div class="f-group"><label>Truck Arrival</label><input type="date" id="fe_truckarr"></div>
@@ -1628,6 +1628,20 @@ function formatExcelDate(val) {
 
 // ══ FORM NHẬP MỚI ══
 const targets = {FCL:3,CFS:5,TRUCK:5,Express:3,AIR:2,XNKTC:3,CPN:5};
+
+function autoExportStatus() {
+  const actual  = document.getElementById('fe_actual')?.value;
+  const planned = document.getElementById('fe_planned')?.value;
+  const statusEl = document.getElementById('fe_status');
+  if (!statusEl) return;
+  if (actual) {
+    statusEl.value = 'Shipped';
+  } else if (planned && new Date(planned) < new Date()) {
+    statusEl.value = 'Overdue';
+  } else {
+    statusEl.value = 'Pending';
+  }
+}
 
 function updateTarget() {
   const mode = document.getElementById('f_mode').value;
