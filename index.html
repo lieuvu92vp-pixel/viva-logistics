@@ -160,6 +160,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .f-group input:focus,.f-group select:focus{border-color:var(--blue)}
 .f-group input.auto{background:#e8f0fe;border-color:#a8c4f8;color:var(--blue);font-weight:500}
 .f-note{font-size:11px;color:var(--text3);background:var(--bg3);padding:8px 12px;border-radius:var(--radius-sm);line-height:1.5;margin-top:8px}
+      .f-inp{width:100%;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box}
+      .f-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(26,115,232,.12)}
 .btn-row{display:flex;gap:8px;margin-top:14px}
 .btn-primary{flex:1;padding:10px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
 .btn-primary:hover{background:var(--navy2)}
@@ -468,8 +470,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
       <!-- ════ ENTRY ════ -->
       <div class="page" id="pg-entry">
-        <div class="g2b">
-          <!-- Upload -->
+
+        <!-- Tabs Import / Export -->
+        <div style="display:flex;gap:2px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--border-radius-lg);padding:3px;width:fit-content;margin-bottom:14px">
+          <button class="tab active" id="tab-imp" onclick="switchEntryTab('imp')" style="padding:7px 20px;border-radius:7px;font-size:13px;font-weight:500;border:none;cursor:pointer;background:var(--bg);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.07)">📥 Lô nhập</button>
+          <button class="tab" id="tab-exp" onclick="switchEntryTab('exp')" style="padding:7px 20px;border-radius:7px;font-size:13px;font-weight:500;border:none;cursor:pointer;background:transparent;color:var(--text2)">📤 Lô xuất</button>
+        </div>
+
+        <!-- TAB: LÔ NHẬP -->
+        <div id="entry-imp" class="g2b">
           <div style="display:flex;flex-direction:column;gap:14px">
             <div class="card">
               <div class="card-head"><div class="card-title">Upload file Excel</div><div class="card-sub">Giữ nguyên thói quen hiện tại</div></div>
@@ -492,8 +501,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 </div>
               </div>
             </div>
-
-            <!-- Pipeline status update -->
             <div class="card">
               <div class="card-head"><div class="card-title">Cập nhật trạng thái nhanh</div><div class="card-sub">Bấm vào bước tiếp theo</div></div>
               <div class="card-body">
@@ -503,8 +510,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
             </div>
           </div>
-
-          <!-- Form nhập mới -->
           <div class="card">
             <div class="card-head"><div class="card-title">Thêm lô nhập mới</div><span class="chip ch-ok">6 trường bắt buộc</span></div>
             <div class="card-body">
@@ -527,7 +532,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="f-group"><label>Target (ngày)</label><input class="auto" type="text" id="f_target" readonly></div>
                 <div class="f-group"><label>Trạng thái</label><input class="auto" type="text" id="f_status" readonly></div>
                 <div class="f-group f-full"><label>Lý do trễ (nếu NOT OK)</label><input type="text" id="f_reasons" placeholder="DHL không giao T7, chờ thông quan..."></div>
-                <div class="f-group"><label>Shipper country</label><input type="text" id="f_vessel" placeholder="Tên tàu / chuyến xe"></div>
+                <div class="f-group"><label>Tên tàu / chuyến xe</label><input type="text" id="f_vessel" placeholder="Tên tàu / chuyến xe"></div>
                 <div class="f-group"><label>CD No</label><input type="text" id="f_cdno" placeholder="1078..."></div>
                 <div class="f-group"><label>Bill No</label><input type="text" id="f_billno" placeholder="JJCN..."></div>
                 <div class="f-group"><label>Forwarder</label><input type="text" id="f_forwarder" placeholder="OCEAN, DHL, Overland..."></div>
@@ -536,10 +541,66 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <button class="btn-sec" onclick="clearForm()">Xoá form</button>
                 <button class="btn-primary" onclick="submitNewImport()">Lưu & Cập nhật</button>
               </div>
-              <div class="f-note">Chỉ 6 trường đầu là bắt buộc. Các trường còn lại có thể điền sau. Số ngày và trạng thái tự tính khi điền đủ ETA và Ngày về kho.</div>
+              <div class="f-note">Chỉ 6 trường đầu là bắt buộc. Số ngày và trạng thái tự tính khi điền đủ ETA và Ngày về kho.</div>
             </div>
           </div>
         </div>
+
+        <!-- TAB: LÔ XUẤT -->
+        <div id="entry-exp" class="g2b" style="display:none">
+          <div class="card" style="grid-column:1/-1">
+            <div class="card-head"><div class="card-title">Thêm lô xuất mới</div><span class="chip ch-ok">6 trường bắt buộc</span></div>
+            <div class="card-body">
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">📦 Thông tin cơ bản</div>
+              <div class="form-grid">
+                <div class="f-group"><label>Khách hàng (Customer) *</label><input type="text" id="fe_customer" placeholder="MUJI, TOMMY, VIVI..."></div>
+                <div class="f-group"><label>Nước nhập khẩu (Export Country) *</label><input type="text" id="fe_country" placeholder="USA, JAPAN, HK..."></div>
+                <div class="f-group"><label>Factory Style *</label><input type="text" id="fe_style" placeholder="H5-14156OS..."></div>
+                <div class="f-group"><label>HQ Code</label><input type="text" id="fe_hqcode" placeholder="H5-14156OS-16..."></div>
+                <div class="f-group"><label>Customer Code</label><input type="text" id="fe_custcode" placeholder="CB1T9A6S..."></div>
+                <div class="f-group"><label>PO Number</label><input type="text" id="fe_po" placeholder="KM-1560..."></div>
+                <div class="f-group"><label>Số lượng (Qty PCS) *</label><input type="number" id="fe_qty" min="0" placeholder="0"></div>
+                <div class="f-group"><label>Phương thức vận chuyển *</label>
+                  <select id="fe_transport">
+                    <option value="">Chọn...</option>
+                    <option value="SEA">SEA</option>
+                    <option value="AIR">AIR</option>
+                    <option value="TRUCK">TRUCK</option>
+                  </select>
+                </div>
+              </div>
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">📅 Ngày tháng</div>
+              <div class="form-grid">
+                <div class="f-group"><label>Ngày xuất dự kiến (Planned Date) *</label><input type="date" id="fe_planned"></div>
+                <div class="f-group"><label>Ngày xuất thực tế (Actual Date)</label><input type="date" id="fe_actual"></div>
+                <div class="f-group"><label>Cut SI</label><input type="date" id="fe_cutsi"></div>
+                <div class="f-group"><label>Cut CY</label><input type="date" id="fe_cutcy"></div>
+                <div class="f-group"><label>Truck Arrival (xe đến)</label><input type="date" id="fe_truckarr"></div>
+                <div class="f-group"><label>Truck Departure (xe đi)</label><input type="date" id="fe_truckdep"></div>
+              </div>
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">🚢 Vận chuyển & Container</div>
+              <div class="form-grid">
+                <div class="f-group"><label>Truck-Cont (loại xe/cont)</label><input type="text" id="fe_container" placeholder="1x20', ĐÓNG OTO..."></div>
+                <div class="f-group"><label>Container Seal</label><input type="text" id="fe_seal" placeholder="U2148845/FX433..."></div>
+                <div class="f-group"><label>Trạng thái (Status)</label>
+                  <select id="fe_status">
+                    <option value="Pending">Pending</option>
+                    <option value="Booked">Booked</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                </div>
+                <div class="f-group"><label>Ghi chú (Remarks)</label><input type="text" id="fe_remarks" placeholder="Ghi chú thêm..."></div>
+              </div>
+              <div class="btn-row">
+                <button class="btn-sec" onclick="clearExportForm()">Xoá form</button>
+                <button class="btn-primary" onclick="submitNewExport()">Lưu & Cập nhật</button>
+              </div>
+              <div class="f-note">* Bắt buộc. Status tự động: có Actual Date → Shipped, chưa có → Pending (trừ khi chọn thủ công).</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div><!-- /page-content -->
@@ -547,6 +608,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div><!-- /shell -->
 
 <div class="toast" id="toast"></div>
+
+<!-- ════ EDIT MODAL ════ -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--bg);border-radius:var(--border-radius-lg);padding:24px;width:min(600px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:600" id="editModalTitle">Chỉnh sửa lô hàng</div>
+      <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text2)">✕</button>
+    </div>
+    <div id="editModalBody"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn-sec" onclick="closeEditModal()">Huỷ</button>
+      <button class="btn-primary" id="editModalSave" onclick="saveEdit()">Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════════════════
@@ -1330,6 +1406,7 @@ function filterImport() {
     <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
     <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${r.status||'–'}</span></td>
     <td style="font-size:10px;color:var(--text3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
+    <td><button onclick="openEditImport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️ Edit</button></td>
   </tr>`).join('') : noDataImp;
 }
 
@@ -1368,6 +1445,7 @@ function filterExport() {
       <td><span class="chip ch-info">${r.transport||'–'}</span></td>
       <td style="font-size:10px">${r.container||'–'}</td>
       <td>${statusChip}</td>
+      <td><button onclick="openEditExport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️ Edit</button></td>
     </tr>`;
   }).join('') : noData;
 }
@@ -1558,13 +1636,174 @@ async function submitNewImport() {
 }
 
 function clearForm() {
-  ['f_shipper','f_country','f_eta','f_arrival','f_vessel','f_cdno','f_billno','f_forwarder','f_reasons'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('f_mode').value = '';
-  document.getElementById('f_packages').value = '';
-  document.getElementById('f_weight').value = '';
-  document.getElementById('f_days').value = '';
-  document.getElementById('f_target').value = '';
-  document.getElementById('f_status').value = '';
+  ['f_shipper','f_country','f_eta','f_arrival','f_vessel','f_cdno','f_billno','f_forwarder','f_reasons'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const mode = document.getElementById('f_mode'); if(mode) mode.value = '';
+  const pkgs = document.getElementById('f_packages'); if(pkgs) pkgs.value = '';
+  const wgt  = document.getElementById('f_weight');   if(wgt)  wgt.value  = '';
+  ['f_days','f_target','f_status'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+}
+
+// ── Entry tab switch
+function switchEntryTab(tab) {
+  document.getElementById('entry-imp').style.display = tab==='imp' ? '' : 'none';
+  document.getElementById('entry-exp').style.display = tab==='exp' ? '' : 'none';
+  document.getElementById('tab-imp').style.background = tab==='imp' ? 'var(--bg)' : 'transparent';
+  document.getElementById('tab-imp').style.color      = tab==='imp' ? 'var(--text)' : 'var(--text2)';
+  document.getElementById('tab-imp').style.boxShadow  = tab==='imp' ? '0 1px 3px rgba(0,0,0,.07)' : 'none';
+  document.getElementById('tab-exp').style.background = tab==='exp' ? 'var(--bg)' : 'transparent';
+  document.getElementById('tab-exp').style.color      = tab==='exp' ? 'var(--text)' : 'var(--text2)';
+  document.getElementById('tab-exp').style.boxShadow  = tab==='exp' ? '0 1px 3px rgba(0,0,0,.07)' : 'none';
+}
+
+// ── Clear export form
+function clearExportForm() {
+  ['fe_customer','fe_country','fe_style','fe_hqcode','fe_custcode','fe_po',
+   'fe_container','fe_seal','fe_remarks'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['fe_qty'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['fe_planned','fe_actual','fe_cutsi','fe_cutcy','fe_truckarr','fe_truckdep'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const tr = document.getElementById('fe_transport'); if(tr) tr.value = '';
+  const st = document.getElementById('fe_status'); if(st) st.value = 'Pending';
+}
+
+// ── Submit new export
+async function submitNewExport() {
+  const customer  = document.getElementById('fe_customer').value.trim();
+  const country   = document.getElementById('fe_country').value.trim();
+  const style     = document.getElementById('fe_style').value.trim();
+  const qty       = document.getElementById('fe_qty').value;
+  const transport = document.getElementById('fe_transport').value;
+  const planned   = document.getElementById('fe_planned').value;
+  if (!customer||!country||!style||!qty||!transport||!planned) {
+    showToast('Vui lòng điền đủ 6 trường bắt buộc','error'); return;
+  }
+  const actual  = document.getElementById('fe_actual').value;
+  const selStat = document.getElementById('fe_status').value;
+  const status  = actual ? 'Shipped' : (selStat || 'Pending');
+  try {
+    await api('addExport', {
+      data: JSON.stringify({
+        customer, country, style, qty: Number(qty),
+        hqCode      : document.getElementById('fe_hqcode').value,
+        customerCode: document.getElementById('fe_custcode').value,
+        po          : document.getElementById('fe_po').value,
+        plannedDate : planned, actualDate: actual,
+        transport,
+        cutSI       : document.getElementById('fe_cutsi').value,
+        cutCY       : document.getElementById('fe_cutcy').value,
+        truckArrival: document.getElementById('fe_truckarr').value,
+        truckDepart : document.getElementById('fe_truckdep').value,
+        container   : document.getElementById('fe_container').value,
+        seal        : document.getElementById('fe_seal').value,
+        status, remarks: document.getElementById('fe_remarks').value,
+      })
+    }, 'GET');
+    showToast('✓ Đã thêm lô xuất thành công!', 'success');
+    clearExportForm();
+    loadExports();
+  } catch(e) { showToast('Lỗi: ' + e.message, 'error'); }
+}
+
+// ── Edit modal
+let _editType = '', _editId = '', _editData = {};
+
+function openEditImport(id) {
+  const r = importData.find(x => x.id === id);
+  if (!r) return;
+  _editType = 'import'; _editId = id; _editData = r;
+  document.getElementById('editModalTitle').textContent = `Chỉnh sửa lô nhập — ${r.shipper}`;
+  document.getElementById('editModalBody').innerHTML = `
+    <div class="form-grid">
+      <div class="f-group f-full"><label>Shipper</label><input class="f-inp" id="em_shipper" value="${r.shipper||''}"></div>
+      <div class="f-group"><label>ETA</label><input class="f-inp" type="date" id="em_eta" value="${toInputDate(r.eta)}"></div>
+      <div class="f-group"><label>Phương thức</label><select class="f-inp" id="em_mode">
+        ${['FCL','CFS','TRUCK','Express','AIR','XNKTC','CPN'].map(m=>`<option ${r.shipMode===m?'selected':''}>${m}</option>`).join('')}
+      </select></div>
+      <div class="f-group"><label>Số kiện</label><input class="f-inp" type="number" id="em_packages" value="${r.packages||0}"></div>
+      <div class="f-group"><label>Cân nặng (kg)</label><input class="f-inp" type="number" id="em_weight" value="${r.weight||0}"></div>
+      <div class="f-group"><label>Ngày về kho</label><input class="f-inp" type="date" id="em_arrival" value="${toInputDate(r.arrival)}"></div>
+      <div class="f-group"><label>CD No</label><input class="f-inp" id="em_cdno" value="${r.cdNo||''}"></div>
+      <div class="f-group"><label>Bill No</label><input class="f-inp" id="em_billno" value="${r.billNo||''}"></div>
+      <div class="f-group f-full"><label>Lý do trễ</label><input class="f-inp" id="em_reasons" value="${r.reasons||''}"></div>
+    </div>`;
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+function openEditExport(id) {
+  const r = exportData.find(x => x.id === id);
+  if (!r) return;
+  _editType = 'export'; _editId = id; _editData = r;
+  document.getElementById('editModalTitle').textContent = `Chỉnh sửa lô xuất — ${r.customer} / ${r.style}`;
+  document.getElementById('editModalBody').innerHTML = `
+    <div class="form-grid">
+      <div class="f-group"><label>Khách hàng</label><input class="f-inp" id="em_customer" value="${r.customer||''}"></div>
+      <div class="f-group"><label>Nước NK</label><input class="f-inp" id="em_country" value="${r.country||''}"></div>
+      <div class="f-group"><label>Factory Style</label><input class="f-inp" id="em_style" value="${r.style||''}"></div>
+      <div class="f-group"><label>PO</label><input class="f-inp" id="em_po" value="${r.po||''}"></div>
+      <div class="f-group"><label>Số lượng PCS</label><input class="f-inp" type="number" id="em_qty" value="${r.qty||0}"></div>
+      <div class="f-group"><label>Transport</label><select class="f-inp" id="em_transport">
+        ${['SEA','AIR','TRUCK'].map(m=>`<option ${r.transport===m?'selected':''}>${m}</option>`).join('')}
+      </select></div>
+      <div class="f-group"><label>Ngày xuất dự kiến</label><input class="f-inp" type="date" id="em_planned" value="${toInputDate(r.plannedDate)}"></div>
+      <div class="f-group"><label>Ngày xuất thực tế</label><input class="f-inp" type="date" id="em_actual" value="${toInputDate(r.actualDate)}"></div>
+      <div class="f-group"><label>Container</label><input class="f-inp" id="em_container" value="${r.container||''}"></div>
+      <div class="f-group"><label>Status</label><select class="f-inp" id="em_status">
+        ${['Shipped','Booked','Pending','Urgent','Overdue'].map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}
+      </select></div>
+      <div class="f-group f-full"><label>Ghi chú</label><input class="f-inp" id="em_remarks" value="${r.remarks||''}"></div>
+    </div>`;
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+function toInputDate(val) {
+  if (!val) return '';
+  // DD/MM/YYYY → YYYY-MM-DD
+  const m = String(val).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return val;
+}
+
+async function saveEdit() {
+  try {
+    if (_editType === 'import') {
+      await api('updateImport', {
+        recordId: _editId,
+        shipper  : document.getElementById('em_shipper').value,
+        eta      : document.getElementById('em_eta').value,
+        shipMode : document.getElementById('em_mode').value,
+        packages : document.getElementById('em_packages').value,
+        weight   : document.getElementById('em_weight').value,
+        arrival  : document.getElementById('em_arrival').value,
+        cdNo     : document.getElementById('em_cdno').value,
+        billNo   : document.getElementById('em_billno').value,
+        reasons  : document.getElementById('em_reasons').value,
+      }, 'GET');
+      showToast('✓ Đã cập nhật lô nhập', 'success');
+      closeEditModal();
+      await loadImports();
+    } else {
+      await api('updateExport', {
+        recordId : _editId,
+        customer : document.getElementById('em_customer').value,
+        country  : document.getElementById('em_country').value,
+        style    : document.getElementById('em_style').value,
+        po       : document.getElementById('em_po').value,
+        qty      : document.getElementById('em_qty').value,
+        transport: document.getElementById('em_transport').value,
+        planned  : document.getElementById('em_planned').value,
+        actual   : document.getElementById('em_actual').value,
+        container: document.getElementById('em_container').value,
+        status   : document.getElementById('em_status').value,
+        remarks  : document.getElementById('em_remarks').value,
+      }, 'GET');
+      showToast('✓ Đã cập nhật lô xuất', 'success');
+      closeEditModal();
+      await loadExports();
+    }
+  } catch(e) { showToast('Lỗi: ' + e.message, 'error'); }
 }
 
 function populateShipperList() {
