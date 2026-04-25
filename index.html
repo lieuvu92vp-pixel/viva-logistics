@@ -1055,12 +1055,15 @@ function renderAlerts(alerts) {
     .sort((a, b) => (parseDate(b.eta)||0) - (parseDate(a.eta)||0));
 
   const count = lateRows.length;
+  const monthLabel = `Tháng ${now.getMonth()+1}/${now.getFullYear()}`;
+  const monthLabelEN = `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()]}-${now.getFullYear()}`;
+  const mLbl = currentLang==='vi' ? monthLabel : monthLabelEN;
 
   const banner = document.getElementById('dashAlert');
   if (count > 0) {
     banner.style.display = 'flex';
     document.getElementById('dashAlertText').innerHTML =
-      `<b>${count} lô nhập đang trễ hạn</b> — ` +
+      `<b>${count} lô nhập đang trễ hạn trong ${mLbl}</b> — ` +
       lateRows.slice(0,3).map(a => `${a.shipper} (${a.days} ngày)`).join(' · ') +
       (count > 3 ? ` và ${count-3} lô khác` : '');
     document.getElementById('alertBadge').textContent = count;
@@ -1070,7 +1073,11 @@ function renderAlerts(alerts) {
   const alertTbl  = document.getElementById('alertTbl');
   if (!alertTbl) return;
   const bannerText = document.getElementById('alertsBannerText');
-  if (bannerText) bannerText.innerHTML = `<b>${count} lô trễ hạn</b> — cần kiểm tra và cập nhật trạng thái`;
+  if (bannerText) bannerText.innerHTML = `<b>${count} lô trễ hạn — ${mLbl}</b> — cần kiểm tra và cập nhật trạng thái`;
+
+  // Cập nhật title card nguyên nhân
+  const ctAlert = document.getElementById('ct-alertbanner');
+  if (ctAlert) ctAlert.textContent = (currentLang==='vi' ? 'Nguyên nhân trễ — ' : 'Late reasons — ') + mLbl;
 
   // ── Tính nguyên nhân trễ động
   const reasonGroups = {};
