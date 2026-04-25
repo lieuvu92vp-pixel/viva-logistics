@@ -1996,9 +1996,9 @@ async function markArrived(id) {
 
 // ══ GLOBAL SEARCH ══
 function onGlobalSearch(q) {
-  if (!q) return;
-  // Switch to import page and filter
-  navTo('import', document.querySelectorAll('.sb-item')[1]);
+  // Chuyển sang trang import và filter
+  const impNav = document.querySelector('.sb-item[onclick*="'import'"]');
+  navTo('import', impNav);
   document.getElementById('impSearch').value = q;
   filterImport();
 }
