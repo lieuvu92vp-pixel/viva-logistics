@@ -482,7 +482,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <th style="cursor:pointer" onclick="sortExport('actual')">Ngày xuất TT ↕</th>
                 <th>Vận chuyển</th>
                 <th>Cut SI</th><th>Cut CY/CFS</th>
-                <th>Truck Arr.</th><th>Truck Dep.</th>
+                <th>Xe đến</th><th>Xe đi</th>
                 <th>Truck-Cont</th><th>Cont. Seal</th>
                 <th>C/O</th><th>Trạng thái</th><th>Ghi chú</th><th></th>
               </tr></thead>
@@ -629,8 +629,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <div class="f-group"><label>Khách hàng *</label><input type="text" id="fe_customer" placeholder="MUJI, TOMMY, VIVI..."></div>
                   <div class="f-group"><label>Nước nhập khẩu *</label><input type="text" id="fe_country" placeholder="USA, JAPAN, HK..."></div>
                   <div class="f-group"><label>Factory Style *</label><input type="text" id="fe_style" placeholder="H5-14156OS..."></div>
-                  <div class="f-group"><label>HQ Code</label><input type="text" id="fe_hqcode" placeholder="H5-14156OS-16..."></div>
-                  <div class="f-group"><label>Customer Code</label><input type="text" id="fe_custcode" placeholder="CB1T9A6S..."></div>
+                  <div class="f-group"><label>Mã hải quan (HQ Code)</label><input type="text" id="fe_hqcode" placeholder="H5-14156OS-16..."></div>
+                  <div class="f-group"><label>Mã khách hàng (Cust. Code)</label><input type="text" id="fe_custcode" placeholder="CB1T9A6S..."></div>
                   <div class="f-group"><label>PO Number</label><input type="text" id="fe_po" placeholder="KM-1560..."></div>
                   <div class="f-group"><label>Số lượng PCS *</label><input type="number" id="fe_qty" min="0" placeholder="0"></div>
                   <div class="f-group"><label>Vận chuyển *</label>
@@ -648,8 +648,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <div class="f-group"><label>Ngày xuất thực tế</label><input type="date" id="fe_actual" onchange="autoExportStatus()"></div>
                   <div class="f-group"><label>Cut SI</label><input type="date" id="fe_cutsi"></div>
                   <div class="f-group"><label>Cut CY</label><input type="date" id="fe_cutcy"></div>
-                  <div class="f-group"><label>Truck Arrival</label><input type="date" id="fe_truckarr"></div>
-                  <div class="f-group"><label>Truck Departure</label><input type="date" id="fe_truckdep"></div>
+                  <div class="f-group"><label>Xe đến (Truck Arrival)</label><input type="date" id="fe_truckarr"></div>
+                  <div class="f-group"><label>Xe đi (Truck Departure)</label><input type="date" id="fe_truckdep"></div>
                 </div>
                 <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">🚢 Vận chuyển & Container</div>
                 <div class="form-grid">
@@ -780,8 +780,8 @@ function applyLang() {
       en: ['No.','ETA','Mode','Goods type','Bill No','INV No','CD No','CD Date','Pkgs','KG','Arrival','Days','Status','Note',''],
     },
     'th-export': {
-      vi: ['STT','Khách hàng','Nước XK','Mã nhà máy','HQ Code','Cust. Code','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Cut SI','Cut CY/CFS','Truck Arr.','Truck Dep.','Truck-Cont','Cont. Seal','C/O','Trạng thái','Ghi chú',''],
-      en: ['No.','Customer','Export country','Factory Style','HQ Code','Cust. Code','PO','Qty PCS','Planned date','Actual date','Transport','Cut SI','Cut CY/CFS','Truck Arr.','Truck Dep.','Truck-Cont','Cont. Seal','C/O','Status','Remarks',''],
+      vi: ['STT','Khách hàng','Nước XK','Mã nhà máy','Mã hải quan','Mã KH','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Cut SI','Cut CY/CFS','Xe đến','Xe đi','Truck-Cont','Cont. Seal','C/O','Trạng thái','Ghi chú',''],
+      en: ['No.','Customer','Export country','Factory Style','HQ Code','Cust. Code','PO','Qty PCS','Planned date','Actual date','Transport','Cut SI','Cut CY/CFS','Truck Arrival','Truck Departure','Truck-Cont','Cont. Seal','C/O','Status','Remarks',''],
     },
     'th-alerts': {
       vi: ['Shipper','Nước','ETA','Mode','Số tờ khai','Kiện','Target','Về kho','Ngày trễ','Lý do'],
@@ -1571,8 +1571,8 @@ function filterExport() {
       <td><span class="chip ch-info">${r.transport||'–'}</span></td>
       <td style="font-size:10px;color:var(--text2)">${r.cutSI||'–'}</td>
       <td style="font-size:10px;color:var(--text2)">${r.cutCY||'–'}</td>
-      <td style="font-size:10px;color:var(--text2)">${r.truckArr||'–'}</td>
-      <td style="font-size:10px;color:var(--text2)">${r.truckDep||'–'}</td>
+      <td style="font-size:10px;color:var(--text2);white-space:nowrap">${r.truckArr||'–'}</td>
+      <td style="font-size:10px;color:var(--text2);white-space:nowrap">${r.truckDep||'–'}</td>
       <td style="font-size:10px;font-weight:600">${r.container||'–'}</td>
       <td style="font-size:10px;color:var(--text2)">${r.containerSeal||'–'}</td>
       <td style="text-align:center">${coChip}</td>
@@ -1923,9 +1923,9 @@ function openEditExport(id) {
         <input class="f-inp" id="em_country" value="${r.country||''}" list="dl_countries" autocomplete="off"></div>
       <div class="f-group"><label>Mã nhà máy (Factory Style)</label>
         <input class="f-inp" id="em_style" value="${r.style||''}"></div>
-      <div class="f-group"><label>HQ Code</label>
+      <div class="f-group"><label>Mã hải quan (HQ Code)</label>
         <input class="f-inp" id="em_hqcode" value="${r.hqCode||''}"></div>
-      <div class="f-group"><label>Customer Code</label>
+      <div class="f-group"><label>Mã khách hàng (Cust. Code)</label>
         <input class="f-inp" id="em_custcode" value="${r.customerCode||''}"></div>
       <div class="f-group"><label>PO</label>
         <input class="f-inp" id="em_po" value="${r.po||''}"></div>
@@ -1943,9 +1943,9 @@ function openEditExport(id) {
         <input class="f-inp" type="date" id="em_cutsi" value="${toInputDate(r.cutSI||'')}"></div>
       <div class="f-group"><label>Cut CY/CFS</label>
         <input class="f-inp" type="date" id="em_cutcy" value="${toInputDate(r.cutCY||'')}"></div>
-      <div class="f-group"><label>Truck Arrival</label>
+      <div class="f-group"><label>Xe đến (Truck Arrival)</label>
         <input class="f-inp" type="date" id="em_truckarr" value="${toInputDate(r.truckArr||'')}"></div>
-      <div class="f-group"><label>Truck Departure</label>
+      <div class="f-group"><label>Xe đi (Truck Departure)</label>
         <input class="f-inp" type="date" id="em_truckdep" value="${toInputDate(r.truckDep||'')}"></div>
       <div class="f-group"><label>Truck-Cont</label>
         <input class="f-inp" id="em_container" value="${r.container||''}"></div>
