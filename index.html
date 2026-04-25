@@ -471,132 +471,174 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <!-- ════ ENTRY ════ -->
       <div class="page" id="pg-entry">
 
-        <!-- Tabs Import / Export -->
-        <div style="display:flex;gap:2px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--border-radius-lg);padding:3px;width:fit-content;margin-bottom:14px">
-          <button class="tab active" id="tab-imp" onclick="switchEntryTab('imp')" style="padding:7px 20px;border-radius:7px;font-size:13px;font-weight:500;border:none;cursor:pointer;background:var(--bg);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.07)">📥 Lô nhập</button>
-          <button class="tab" id="tab-exp" onclick="switchEntryTab('exp')" style="padding:7px 20px;border-radius:7px;font-size:13px;font-weight:500;border:none;cursor:pointer;background:transparent;color:var(--text2)">📤 Lô xuất</button>
-        </div>
-
-        <!-- TAB: LÔ NHẬP -->
-        <div id="entry-imp" class="g2b">
-          <div style="display:flex;flex-direction:column;gap:14px">
-            <div class="card">
-              <div class="card-head"><div class="card-title">Upload file Excel</div><div class="card-sub">Giữ nguyên thói quen hiện tại</div></div>
-              <div class="card-body">
-                <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
-                  ondragover="event.preventDefault();this.classList.add('drag')"
-                  ondragleave="this.classList.remove('drag')"
-                  ondrop="handleDrop(event)">
-                  <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
-                  <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
-                  <div class="uz-title">Kéo thả file .xlsx vào đây</div>
-                  <div class="uz-sub">hoặc click để chọn file<br><small>Import_schedule_2026.xlsx · LOADING_SCHEDULE_2026.xlsx</small></div>
-                </div>
-                <div id="uploadPreview" style="display:none" class="upload-preview">
-                  <div class="up-head">
-                    <span id="previewTitle">Preview</span>
-                    <button class="btn-success" onclick="submitImport()" style="padding:5px 14px;font-size:12px">Import →</button>
-                  </div>
-                  <div class="tbl-wrap"><table class="tbl" style="font-size:10px"><thead><tr id="previewHead"></tr></thead><tbody id="previewBody"></tbody></table></div>
-                </div>
+        <!-- 2 nút chính -->
+        <div style="display:flex;gap:14px;margin-bottom:20px">
+          <div class="card" style="flex:1;cursor:pointer;transition:box-shadow .15s" onclick="showEntryMode('upload')" id="btn-mode-upload">
+            <div class="card-body" style="display:flex;align-items:center;gap:14px;padding:18px 20px">
+              <div style="width:44px;height:44px;border-radius:10px;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg>
               </div>
-            </div>
-            <div class="card">
-              <div class="card-head"><div class="card-title">Cập nhật trạng thái nhanh</div><div class="card-sub">Bấm vào bước tiếp theo</div></div>
-              <div class="card-body">
-                <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Tìm lô hàng cần cập nhật:</div>
-                <input class="fb-input" style="width:100%;margin-bottom:12px" placeholder="Nhập tên shipper hoặc ID lô hàng..." id="pipeSearch" oninput="searchForPipeline(this.value)">
-                <div id="pipelineResult"></div>
+              <div>
+                <div style="font-weight:600;font-size:14px">Upload từ file Excel</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Kéo thả hoặc chọn file .xlsx</div>
               </div>
             </div>
           </div>
+          <div class="card" style="flex:1;cursor:pointer;transition:box-shadow .15s" onclick="showEntryMode('manual')" id="btn-mode-manual">
+            <div class="card-body" style="display:flex;align-items:center;gap:14px;padding:18px 20px">
+              <div style="width:44px;height:44px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 2v12M2 8h12"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:14px">Nhập tay thủ công</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Điền form lô nhập / lô xuất</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: UPLOAD -->
+        <div id="panel-upload" style="display:none">
           <div class="card">
-            <div class="card-head"><div class="card-title">Thêm lô nhập mới</div><span class="chip ch-ok">6 trường bắt buộc</span></div>
+            <div class="card-head">
+              <div class="card-title">Upload file Excel</div>
+              <div class="card-sub">Giữ nguyên thói quen hiện tại</div>
+            </div>
             <div class="card-body">
-              <div class="form-grid">
-                <div class="f-group"><label>Shipper *</label><input type="text" id="f_shipper" list="shipperList" placeholder="Gõ để tìm..."><datalist id="shipperList"></datalist></div>
-                <div class="f-group"><label>Nước xuất xứ *</label><input type="text" id="f_country" placeholder="CN, VN, JP..."></div>
-                <div class="f-group"><label>ETA (ngày tàu/xe đến) *</label><input type="date" id="f_eta" onchange="recalcDays()"></div>
-                <div class="f-group"><label>Phương thức *</label>
-                  <select id="f_mode" onchange="updateTarget()">
-                    <option value="">Chọn mode...</option>
-                    <option value="FCL">FCL – Container</option><option value="CFS">CFS</option>
-                    <option value="TRUCK">TRUCK</option><option value="Express">Express / DHL</option>
-                    <option value="AIR">AIR</option><option value="XNKTC">XNKTC</option><option value="CPN">CPN</option>
-                  </select>
+              <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
+                ondragover="event.preventDefault();this.classList.add('drag')"
+                ondragleave="this.classList.remove('drag')"
+                ondrop="handleDrop(event)">
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
+                <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
+                <div class="uz-title">Kéo thả file .xlsx vào đây</div>
+                <div class="uz-sub">hoặc click để chọn file<br><small>Import_schedule_2026.xlsx · LOADING_SCHEDULE_2026.xlsx</small></div>
+              </div>
+              <div id="uploadPreview" style="display:none" class="upload-preview">
+                <div class="up-head">
+                  <span id="previewTitle">Preview</span>
+                  <button class="btn-success" onclick="submitImport()" style="padding:5px 14px;font-size:12px">Import →</button>
                 </div>
-                <div class="f-group"><label>Số kiện *</label><input type="number" id="f_packages" min="0" placeholder="0"></div>
-                <div class="f-group"><label>Cân nặng (kg) *</label><input type="number" id="f_weight" step="0.1" placeholder="0.0"></div>
-                <div class="f-group"><label>Ngày về kho thực tế *</label><input type="date" id="f_arrival" onchange="recalcDays()"></div>
-                <div class="f-group"><label>Số ngày xử lý</label><input class="auto" type="text" id="f_days" readonly></div>
-                <div class="f-group"><label>Target (ngày)</label><input class="auto" type="text" id="f_target" readonly></div>
-                <div class="f-group"><label>Trạng thái</label><input class="auto" type="text" id="f_status" readonly></div>
-                <div class="f-group f-full"><label>Lý do trễ (nếu NOT OK)</label><input type="text" id="f_reasons" placeholder="DHL không giao T7, chờ thông quan..."></div>
-                <div class="f-group"><label>Tên tàu / chuyến xe</label><input type="text" id="f_vessel" placeholder="Tên tàu / chuyến xe"></div>
-                <div class="f-group"><label>CD No</label><input type="text" id="f_cdno" placeholder="1078..."></div>
-                <div class="f-group"><label>Bill No</label><input type="text" id="f_billno" placeholder="JJCN..."></div>
-                <div class="f-group"><label>Forwarder</label><input type="text" id="f_forwarder" placeholder="OCEAN, DHL, Overland..."></div>
+                <div class="tbl-wrap"><table class="tbl" style="font-size:10px"><thead><tr id="previewHead"></tr></thead><tbody id="previewBody"></tbody></table></div>
               </div>
-              <div class="btn-row">
-                <button class="btn-sec" onclick="clearForm()">Xoá form</button>
-                <button class="btn-primary" onclick="submitNewImport()">Lưu & Cập nhật</button>
-              </div>
-              <div class="f-note">Chỉ 6 trường đầu là bắt buộc. Số ngày và trạng thái tự tính khi điền đủ ETA và Ngày về kho.</div>
             </div>
           </div>
         </div>
 
-        <!-- TAB: LÔ XUẤT -->
-        <div id="entry-exp" class="g2b" style="display:none">
-          <div class="card" style="grid-column:1/-1">
-            <div class="card-head"><div class="card-title">Thêm lô xuất mới</div><span class="chip ch-ok">6 trường bắt buộc</span></div>
-            <div class="card-body">
-              <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">📦 Thông tin cơ bản</div>
-              <div class="form-grid">
-                <div class="f-group"><label>Khách hàng (Customer) *</label><input type="text" id="fe_customer" placeholder="MUJI, TOMMY, VIVI..."></div>
-                <div class="f-group"><label>Nước nhập khẩu (Export Country) *</label><input type="text" id="fe_country" placeholder="USA, JAPAN, HK..."></div>
-                <div class="f-group"><label>Factory Style *</label><input type="text" id="fe_style" placeholder="H5-14156OS..."></div>
-                <div class="f-group"><label>HQ Code</label><input type="text" id="fe_hqcode" placeholder="H5-14156OS-16..."></div>
-                <div class="f-group"><label>Customer Code</label><input type="text" id="fe_custcode" placeholder="CB1T9A6S..."></div>
-                <div class="f-group"><label>PO Number</label><input type="text" id="fe_po" placeholder="KM-1560..."></div>
-                <div class="f-group"><label>Số lượng (Qty PCS) *</label><input type="number" id="fe_qty" min="0" placeholder="0"></div>
-                <div class="f-group"><label>Phương thức vận chuyển *</label>
-                  <select id="fe_transport">
-                    <option value="">Chọn...</option>
-                    <option value="SEA">SEA</option>
-                    <option value="AIR">AIR</option>
-                    <option value="TRUCK">TRUCK</option>
-                  </select>
+        <!-- PANEL: MANUAL -->
+        <div id="panel-manual" style="display:none">
+          <!-- Sub-tabs -->
+          <div style="display:flex;gap:10px;margin-bottom:16px">
+            <button onclick="switchManualTab('imp')" id="mtab-imp"
+              style="padding:9px 22px;border-radius:8px;font-size:13px;font-weight:500;border:1.5px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer">
+              📥 Hàng nhập
+            </button>
+            <button onclick="switchManualTab('exp')" id="mtab-exp"
+              style="padding:9px 22px;border-radius:8px;font-size:13px;font-weight:500;border:1.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer">
+              📤 Hàng xuất
+            </button>
+          </div>
+
+          <!-- Form nhập -->
+          <div id="mform-imp">
+            <div class="g2b">
+              <div class="card">
+                <div class="card-head"><div class="card-title">Cập nhật trạng thái nhanh</div><div class="card-sub">Bấm vào bước tiếp theo</div></div>
+                <div class="card-body">
+                  <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Tìm lô hàng cần cập nhật:</div>
+                  <input class="fb-input" style="width:100%;margin-bottom:12px" placeholder="Nhập tên shipper hoặc ID lô hàng..." id="pipeSearch" oninput="searchForPipeline(this.value)">
+                  <div id="pipelineResult"></div>
                 </div>
               </div>
-              <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">📅 Ngày tháng</div>
-              <div class="form-grid">
-                <div class="f-group"><label>Ngày xuất dự kiến (Planned Date) *</label><input type="date" id="fe_planned"></div>
-                <div class="f-group"><label>Ngày xuất thực tế (Actual Date)</label><input type="date" id="fe_actual"></div>
-                <div class="f-group"><label>Cut SI</label><input type="date" id="fe_cutsi"></div>
-                <div class="f-group"><label>Cut CY</label><input type="date" id="fe_cutcy"></div>
-                <div class="f-group"><label>Truck Arrival (xe đến)</label><input type="date" id="fe_truckarr"></div>
-                <div class="f-group"><label>Truck Departure (xe đi)</label><input type="date" id="fe_truckdep"></div>
-              </div>
-              <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">🚢 Vận chuyển & Container</div>
-              <div class="form-grid">
-                <div class="f-group"><label>Truck-Cont (loại xe/cont)</label><input type="text" id="fe_container" placeholder="1x20', ĐÓNG OTO..."></div>
-                <div class="f-group"><label>Container Seal</label><input type="text" id="fe_seal" placeholder="U2148845/FX433..."></div>
-                <div class="f-group"><label>Trạng thái (Status)</label>
-                  <select id="fe_status">
-                    <option value="Pending">Pending</option>
-                    <option value="Booked">Booked</option>
-                    <option value="Shipped">Shipped</option>
-                    <option value="Urgent">Urgent</option>
-                  </select>
+              <div class="card">
+                <div class="card-head"><div class="card-title">Thêm lô nhập mới</div><span class="chip ch-ok">6 trường bắt buộc</span></div>
+                <div class="card-body">
+                  <div class="form-grid">
+                    <div class="f-group"><label>Shipper *</label><input type="text" id="f_shipper" list="shipperList" placeholder="Gõ để tìm..."><datalist id="shipperList"></datalist></div>
+                    <div class="f-group"><label>Nước xuất xứ *</label><input type="text" id="f_country" placeholder="CN, VN, JP..."></div>
+                    <div class="f-group"><label>ETA *</label><input type="date" id="f_eta" onchange="recalcDays()"></div>
+                    <div class="f-group"><label>Phương thức *</label>
+                      <select id="f_mode" onchange="updateTarget()">
+                        <option value="">Chọn mode...</option>
+                        <option value="FCL">FCL – Container</option><option value="CFS">CFS</option>
+                        <option value="TRUCK">TRUCK</option><option value="Express">Express / DHL</option>
+                        <option value="AIR">AIR</option><option value="XNKTC">XNKTC</option><option value="CPN">CPN</option>
+                      </select>
+                    </div>
+                    <div class="f-group"><label>Số kiện *</label><input type="number" id="f_packages" min="0" placeholder="0"></div>
+                    <div class="f-group"><label>Cân nặng (kg) *</label><input type="number" id="f_weight" step="0.1" placeholder="0.0"></div>
+                    <div class="f-group"><label>Ngày về kho</label><input type="date" id="f_arrival" onchange="recalcDays()"></div>
+                    <div class="f-group"><label>Số ngày xử lý</label><input class="auto" type="text" id="f_days" readonly></div>
+                    <div class="f-group"><label>Target (ngày)</label><input class="auto" type="text" id="f_target" readonly></div>
+                    <div class="f-group"><label>Trạng thái</label><input class="auto" type="text" id="f_status" readonly></div>
+                    <div class="f-group f-full"><label>Lý do trễ</label><input type="text" id="f_reasons" placeholder="DHL không giao T7, chờ thông quan..."></div>
+                    <div class="f-group"><label>Tên tàu / chuyến xe</label><input type="text" id="f_vessel" placeholder="Tên tàu / chuyến xe"></div>
+                    <div class="f-group"><label>CD No</label><input type="text" id="f_cdno" placeholder="1078..."></div>
+                    <div class="f-group"><label>Bill No</label><input type="text" id="f_billno" placeholder="JJCN..."></div>
+                    <div class="f-group"><label>Forwarder</label><input type="text" id="f_forwarder" placeholder="OCEAN, DHL, Overland..."></div>
+                  </div>
+                  <div class="btn-row">
+                    <button class="btn-sec" onclick="clearForm()">Xoá form</button>
+                    <button class="btn-primary" onclick="submitNewImport()">Lưu & Cập nhật</button>
+                  </div>
+                  <div class="f-note">Chỉ 6 trường đầu là bắt buộc. Số ngày và trạng thái tự tính khi điền đủ ETA và Ngày về kho.</div>
                 </div>
-                <div class="f-group"><label>Ghi chú (Remarks)</label><input type="text" id="fe_remarks" placeholder="Ghi chú thêm..."></div>
               </div>
-              <div class="btn-row">
-                <button class="btn-sec" onclick="clearExportForm()">Xoá form</button>
-                <button class="btn-primary" onclick="submitNewExport()">Lưu & Cập nhật</button>
+            </div>
+          </div>
+
+          <!-- Form xuất -->
+          <div id="mform-exp" style="display:none">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Thêm lô xuất mới</div><span class="chip ch-ok">6 trường bắt buộc</span></div>
+              <div class="card-body">
+                <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">📦 Thông tin cơ bản</div>
+                <div class="form-grid">
+                  <div class="f-group"><label>Khách hàng *</label><input type="text" id="fe_customer" placeholder="MUJI, TOMMY, VIVI..."></div>
+                  <div class="f-group"><label>Nước nhập khẩu *</label><input type="text" id="fe_country" placeholder="USA, JAPAN, HK..."></div>
+                  <div class="f-group"><label>Factory Style *</label><input type="text" id="fe_style" placeholder="H5-14156OS..."></div>
+                  <div class="f-group"><label>HQ Code</label><input type="text" id="fe_hqcode" placeholder="H5-14156OS-16..."></div>
+                  <div class="f-group"><label>Customer Code</label><input type="text" id="fe_custcode" placeholder="CB1T9A6S..."></div>
+                  <div class="f-group"><label>PO Number</label><input type="text" id="fe_po" placeholder="KM-1560..."></div>
+                  <div class="f-group"><label>Số lượng PCS *</label><input type="number" id="fe_qty" min="0" placeholder="0"></div>
+                  <div class="f-group"><label>Vận chuyển *</label>
+                    <select id="fe_transport">
+                      <option value="">Chọn...</option>
+                      <option value="SEA">SEA</option>
+                      <option value="AIR">AIR</option>
+                      <option value="TRUCK">TRUCK</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">📅 Ngày tháng</div>
+                <div class="form-grid">
+                  <div class="f-group"><label>Ngày xuất dự kiến *</label><input type="date" id="fe_planned"></div>
+                  <div class="f-group"><label>Ngày xuất thực tế</label><input type="date" id="fe_actual"></div>
+                  <div class="f-group"><label>Cut SI</label><input type="date" id="fe_cutsi"></div>
+                  <div class="f-group"><label>Cut CY</label><input type="date" id="fe_cutcy"></div>
+                  <div class="f-group"><label>Truck Arrival</label><input type="date" id="fe_truckarr"></div>
+                  <div class="f-group"><label>Truck Departure</label><input type="date" id="fe_truckdep"></div>
+                </div>
+                <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">🚢 Vận chuyển & Container</div>
+                <div class="form-grid">
+                  <div class="f-group"><label>Container / Truck</label><input type="text" id="fe_container" placeholder="1x20', ĐÓNG OTO..."></div>
+                  <div class="f-group"><label>Container Seal</label><input type="text" id="fe_seal" placeholder="U2148845/FX433..."></div>
+                  <div class="f-group"><label>Trạng thái</label>
+                    <select id="fe_status">
+                      <option value="Pending">Pending</option>
+                      <option value="Booked">Booked</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Urgent">Urgent</option>
+                    </select>
+                  </div>
+                  <div class="f-group"><label>Ghi chú</label><input type="text" id="fe_remarks" placeholder="Ghi chú..."></div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn-sec" onclick="clearExportForm()">Xoá form</button>
+                  <button class="btn-primary" onclick="submitNewExport()">Lưu & Cập nhật</button>
+                </div>
+                <div class="f-note">* Bắt buộc. Status tự động: có Actual Date → Shipped.</div>
               </div>
-              <div class="f-note">* Bắt buộc. Status tự động: có Actual Date → Shipped, chưa có → Pending (trừ khi chọn thủ công).</div>
             </div>
           </div>
         </div>
@@ -1643,17 +1685,32 @@ function clearForm() {
   ['f_days','f_target','f_status'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
 }
 
-// ── Entry tab switch
-function switchEntryTab(tab) {
-  document.getElementById('entry-imp').style.display = tab==='imp' ? '' : 'none';
-  document.getElementById('entry-exp').style.display = tab==='exp' ? '' : 'none';
-  document.getElementById('tab-imp').style.background = tab==='imp' ? 'var(--bg)' : 'transparent';
-  document.getElementById('tab-imp').style.color      = tab==='imp' ? 'var(--text)' : 'var(--text2)';
-  document.getElementById('tab-imp').style.boxShadow  = tab==='imp' ? '0 1px 3px rgba(0,0,0,.07)' : 'none';
-  document.getElementById('tab-exp').style.background = tab==='exp' ? 'var(--bg)' : 'transparent';
-  document.getElementById('tab-exp').style.color      = tab==='exp' ? 'var(--text)' : 'var(--text2)';
-  document.getElementById('tab-exp').style.boxShadow  = tab==='exp' ? '0 1px 3px rgba(0,0,0,.07)' : 'none';
+// ── Entry page flow
+function showEntryMode(mode) {
+  const panels = ['panel-upload','panel-manual'];
+  const btns   = ['btn-mode-upload','btn-mode-manual'];
+  panels.forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('panel-' + mode).style.display = '';
+  // Highlight active card
+  btns.forEach(id => document.getElementById(id).style.boxShadow = '');
+  document.getElementById('btn-mode-' + mode).style.boxShadow = '0 0 0 2px var(--blue)';
 }
+
+function switchManualTab(tab) {
+  document.getElementById('mform-imp').style.display = tab==='imp' ? '' : 'none';
+  document.getElementById('mform-exp').style.display = tab==='exp' ? '' : 'none';
+  const impBtn = document.getElementById('mtab-imp');
+  const expBtn = document.getElementById('mtab-exp');
+  if (tab==='imp') {
+    impBtn.style.background = 'var(--blue)'; impBtn.style.color = '#fff'; impBtn.style.borderColor = 'var(--blue)';
+    expBtn.style.background = 'var(--bg)';   expBtn.style.color = 'var(--text2)'; expBtn.style.borderColor = 'var(--border2)';
+  } else {
+    expBtn.style.background = 'var(--teal)'; expBtn.style.color = '#fff'; expBtn.style.borderColor = 'var(--teal)';
+    impBtn.style.background = 'var(--bg)';   impBtn.style.color = 'var(--text2)'; impBtn.style.borderColor = 'var(--border2)';
+  }
+}
+
+function switchEntryTab(tab) { switchManualTab(tab); }
 
 // ── Clear export form
 function clearExportForm() {
