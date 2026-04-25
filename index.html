@@ -406,8 +406,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <div class="g2b">
           <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-alertbanner" data-vi="Nguyên nhân trễ — Tháng 4/2026" data-en="Late reasons — Apr/2026">Nguyên nhân trễ — Tháng 4/2026</div></div>
-            <div class="card-body">
+            <div class="card-head"><div class="card-title" id="ct-alertbanner" data-vi="Nguyên nhân trễ — Tháng này" data-en="Late reasons — This month">Nguyên nhân trễ — Tháng này</div></div>
+            <div class="card-body" id="alertReasons">
               <div class="prog-wrap"><div class="prog-label" style="width:130px" data-vi="DHL không giao T7-CN" data-en="DHL no Sat-Sun delivery">DHL không giao T7-CN</div><div class="prog-track"><div class="prog-fill" style="width:44%;background:var(--red)"></div></div><div class="prog-val">4 <span data-vi="lô" data-en="lots">lô</span></div></div>
               <div class="prog-wrap"><div class="prog-label" style="width:130px" data-vi="Thông quan chậm" data-en="Slow customs clearance">Thông quan chậm</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 <span data-vi="lô" data-en="lots">lô</span></div></div>
               <div class="prog-wrap"><div class="prog-label" style="width:130px" data-vi="Hàng nội địa xa" data-en="Long domestic distance">Hàng nội địa xa</div><div class="prog-track"><div class="prog-fill" style="width:22%;background:var(--amber)"></div></div><div class="prog-val">2 <span data-vi="lô" data-en="lots">lô</span></div></div>
@@ -1041,12 +1041,24 @@ function renderKPIFallback() {
 }
 
 function renderAlerts(alerts) {
-  // Lấy từ importData đã load — lô có status NOT OK
-  const lateRows = importData
+  const now    = new Date();
+  const thisM  = now.getMonth();
+  const thisY  = now.getFullYear();
+
+  // Lọc theo tháng hiện tại dựa vào ETA
+  const thisMonthRows = importData.filter(r => {
+    const eta = parseDate(r.eta);
+    return eta && eta.getMonth() === thisM && eta.getFullYear() === thisY;
+  });
+  const totalMonth = thisMonthRows.length;
+
+  // Lô trễ tháng này
+  const lateRows = thisMonthRows
     .filter(r => r.status === 'NOT OK')
     .sort((a, b) => (parseDate(b.eta)||0) - (parseDate(a.eta)||0));
 
   const count = lateRows.length;
+
   const banner = document.getElementById('dashAlert');
   if (count > 0) {
     banner.style.display = 'flex';
@@ -1058,12 +1070,47 @@ function renderAlerts(alerts) {
     document.getElementById('alertBadge').style.display = 'inline';
   }
 
-  // Bảng trang cảnh báo
-  const alertTbl = document.getElementById('alertTbl');
+  const alertTbl  = document.getElementById('alertTbl');
   if (!alertTbl) return;
-
   const bannerText = document.getElementById('alertsBannerText');
   if (bannerText) bannerText.innerHTML = `<b>${count} lô trễ hạn</b> — cần kiểm tra và cập nhật trạng thái`;
+
+  // ── Tính nguyên nhân trễ động
+  const reasonGroups = {};
+  lateRows.forEach(r => {
+    const reason = (r.reasons||'').trim();
+    let key = currentLang==='vi' ? 'Chưa cập nhật lý do' : 'No reason entered';
+    if      (/DHL|T7|CN|weekend|sat|sun/i.test(reason))                     key = currentLang==='vi' ? 'DHL không giao T7-CN'       : 'DHL no Sat-Sun delivery';
+    else if (/customs|thông quan|clearance|CD|Bill|telex|consignee/i.test(reason)) key = currentLang==='vi' ? 'Thông quan chậm'            : 'Slow customs clearance';
+    else if (/holiday|tết|lunar|lễ/i.test(reason))                           key = currentLang==='vi' ? 'Nghỉ lễ / Tết'              : 'Public holiday';
+    else if (/nội địa|truck|xe|xa|VN|viva vn/i.test(reason))                 key = currentLang==='vi' ? 'Hàng nội địa xa'            : 'Long domestic distance';
+    else if (/CFS|cont|container/i.test(reason))                              key = currentLang==='vi' ? 'Mở cont CFS trễ'            : 'Late CFS unstuffing';
+    else if (/supplier|NCC|nhà cung cấp|customer|replied/i.test(reason))     key = currentLang==='vi' ? 'NCC / Khách hàng chậm'      : 'Supplier / Customer delay';
+    else if (reason)                                                           key = currentLang==='vi' ? 'Nguyên nhân khác'           : 'Other reasons';
+    reasonGroups[key] = (reasonGroups[key]||0) + 1;
+  });
+
+  const reasonsEl = document.getElementById('alertReasons');
+  if (reasonsEl) {
+    const sorted = Object.entries(reasonGroups).sort((a,b)=>b[1]-a[1]);
+    const maxVal = sorted[0]?.[1] || 1;
+    reasonsEl.innerHTML = sorted.map(([key, val]) => {
+      const pctOfLate  = count > 0      ? Math.round(val/count*100)      : 0;
+      const pctOfTotal = totalMonth > 0 ? Math.round(val/totalMonth*100) : 0;
+      const barW = Math.round(val/maxVal*100);
+      const color = /DHL|Sat/.test(key) ? 'var(--red)'
+        : /Tết|holiday|Thông quan|customs/.test(key) ? 'var(--amber)'
+        : 'var(--border2)';
+      return `<div class="prog-wrap" style="margin-bottom:10px">
+        <div class="prog-label" style="width:170px;font-size:11px">${key}</div>
+        <div class="prog-track"><div class="prog-fill" style="width:${barW}%;background:${color}"></div></div>
+        <div style="text-align:right;min-width:120px;font-size:11px;padding-left:8px">
+          <b>${val}/${totalMonth} ${currentLang==='vi'?'lô':'lots'}</b>
+          <span style="color:var(--text3)"> ${currentLang==='vi'?'chiếm':'='} ${pctOfTotal}%</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   alertTbl.innerHTML = lateRows.map(r => `<tr>
     <td class="shipper">${r.shipper||'–'}</td>
