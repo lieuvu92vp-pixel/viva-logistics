@@ -1400,7 +1400,7 @@ function renderCustChart(customers) {
   const _total = totalActQty || 1;
   const colors = ['#0EA47A','#2469B3','#E8A020','#D94040','#6366f1'];
 
-  // Plugin hiển thị % và PCS trên đầu cột
+  // Plugin: % bên trong cột, PCS dưới tên brand
   const labelPlugin = {
     id: 'custLabels',
     afterDatasetsDraw(chart) {
@@ -1408,12 +1408,31 @@ function renderCustChart(customers) {
       chart.data.datasets[0].data.forEach((val, i) => {
         const bar = chart.getDatasetMeta(0).data[i];
         const pct = Math.round(val/_total*100);
+        const barH = bar.height || 0;
+        if (barH < 14) return;
         ctx.save();
-        ctx.fillStyle = '#333';
-        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(pct + '%', bar.x, bar.y - 2);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pct + '%', bar.x, bar.y + barH/2);
+        ctx.restore();
+      });
+    },
+    afterDraw(chart) {
+      const ctx = chart.ctx;
+      const xAxis = chart.scales.x;
+      chart.data.datasets[0].data.forEach((val, i) => {
+        const x = xAxis.getPixelForTick(i);
+        const bottom = chart.chartArea.bottom;
+        const pcsStr = val >= 1000000 ? (val/1000000).toFixed(1)+'M'
+                     : val >= 1000    ? Math.round(val/1000)+'K' : String(val);
+        ctx.save();
+        ctx.fillStyle = '#888';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(pcsStr + ' PCS', x, bottom + 22);
         ctx.restore();
       });
     }
@@ -1447,7 +1466,7 @@ function renderCustChart(customers) {
         y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { font: { size: 10 },
           callback: v => v >= 1000 ? (v/1000).toFixed(0)+'K' : v } }
       },
-      layout: { padding: { top: 18 } }
+      layout: { padding: { top: 8, bottom: 14 } }
     },
     plugins: [labelPlugin]
   });
