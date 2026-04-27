@@ -1394,7 +1394,29 @@ function renderCustChart(customers) {
   const canvas = document.getElementById('custChart');
   if (!canvas || !customers?.length) return;
   if (custChart) { custChart.destroy(); custChart = null; }
+
+  const totalActQty = customers[0]?.totalActQty || customers.reduce((s,c)=>s+c.qty,0);
   const colors = ['#0EA47A','#2469B3','#E8A020','#D94040','#6366f1'];
+
+  // Plugin hiển thị % và PCS trên đầu cột
+  const labelPlugin = {
+    id: 'custLabels',
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      chart.data.datasets[0].data.forEach((val, i) => {
+        const bar = chart.getDatasetMeta(0).data[i];
+        const pct = totalActQty > 0 ? Math.round(val/totalActQty*100) : 0;
+        ctx.save();
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(pct + '%', bar.x, bar.y - 2);
+        ctx.restore();
+      });
+    }
+  };
+
   custChart = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -1409,15 +1431,27 @@ function renderCustChart(customers) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ctx.raw.toLocaleString() + ' PCS' } }
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const pct = totalActQty > 0 ? Math.round(ctx.raw/totalActQty*100) : 0;
+              return `${pct}% (${ctx.raw.toLocaleString()} / ${totalActQty.toLocaleString()} PCS)`;
+            }
+          }
+        }
       },
       scales: {
         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
         y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { font: { size: 10 },
           callback: v => v >= 1000 ? (v/1000).toFixed(0)+'K' : v } }
-      }
-    }
+      },
+      layout: { padding: { top: 18 } }
+    },
+    plugins: [labelPlugin]
   });
+  // Cập nhật subtitle
+  const sub = document.getElementById('cs-custchart');
+  if (sub) sub.textContent = `Tổng thực tế: ${totalActQty.toLocaleString()} PCS`;
 }
 
 function renderChart(byMonth) {
@@ -1727,7 +1761,7 @@ function filterExport() {
       <td style="font-size:10px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.hqCode||''}">${r.hqCode||'–'}</td>
       <td style="font-size:10px;color:var(--text2);max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.customerCode||'–'}</td>
       <td style="font-size:10px;max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.po||'–'}</td>
-      <td style="text-align:right;font-weight:600;font-size:11px">${Number(r.qty||0).toLocaleString()}</td>
+      <td style="text-align:right;font-weight:600;font-size:11px" title="DK: ${Number(r.qty||0).toLocaleString()}">${Number(r.qtyAct||r.qty||0).toLocaleString()}${r.qtyAct&&r.qtyAct!==r.qty?'<span style="font-size:9px;color:var(--text3)"> /'+Number(r.qty||0).toLocaleString()+'</span>':''}</td>
       <td style="font-size:11px">${r.plannedDate||'–'}</td>
       <td style="font-size:11px">${r.actualDate||'–'}</td>
       <td><span class="chip ch-info">${r.transport||'–'}</span></td>
@@ -2151,8 +2185,10 @@ function openEditExport(id) {
         <input class="f-inp" id="em_custcode" value="${r.customerCode||''}"></div>
       <div class="f-group"><label>PO</label>
         <input class="f-inp" id="em_po" value="${r.po||''}"></div>
-      <div class="f-group"><label>Số lượng PCS</label>
+      <div class="f-group"><label>SL dự kiến (Qty Exp)</label>
         <input class="f-inp" type="number" id="em_qty" value="${r.qty||0}"></div>
+      <div class="f-group"><label>SL thực tế (Qty Act)</label>
+        <input class="f-inp" type="number" id="em_qtyact" value="${r.qtyAct||0}"></div>
       <div class="f-group"><label>Vận chuyển</label>
         <select class="f-inp" id="em_transport">
           ${['SEA','AIR','TRUCK'].map(m=>`<option ${r.transport===m?'selected':''}>${m}</option>`).join('')}
@@ -2238,6 +2274,7 @@ async function saveEdit() {
         customerCode: document.getElementById('em_custcode').value,
         po          : document.getElementById('em_po').value,
         qty         : document.getElementById('em_qty').value,
+        qtyAct      : document.getElementById('em_qtyact')?.value||0,
         transport   : document.getElementById('em_transport').value,
         planned     : document.getElementById('em_planned').value,
         actual      : document.getElementById('em_actual').value,
