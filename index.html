@@ -395,6 +395,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <div class="g2b">
           <div class="card">
+            <div class="card-head"><div class="card-title" id="ct-custchart">Top 5 khách hàng xuất nhiều nhất</div><div class="card-sub" id="cs-custchart">Tổng PCS 2026</div></div>
+            <div class="card-body"><div style="position:relative;height:200px"><canvas id="custChart"></canvas></div></div>
+          </div>
+          <div class="card">
             <div class="card-head"><div class="card-title" id="ct-laterate">% Trễ theo phương thức</div><div class="card-sub" data-vi="Tháng 1→3 / 2026" data-en="Jan→Mar / 2026">Tháng 1→3 / 2026</div></div>
             <div class="card-body">
               <div class="prog-wrap"><div class="prog-label">Express</div><div class="prog-track"><div class="prog-fill" style="width:87%;background:var(--red)"></div></div><div class="prog-val" style="color:var(--red)">12.5%</div></div>
@@ -982,6 +986,7 @@ function toggleLang() {
     renderUpcoming();
     filterImport();
     filterExport();
+    if (window._lastTopCust) renderCustChart(window._lastTopCust);
   }
 }
 
@@ -1143,13 +1148,15 @@ async function api(action, params = {}, method = 'GET', auth = true) {
 async function loadDashboard() {
   try {
     const data = await api('getDashboard');
-    window._lastKpi      = data.kpi;
-    window._lastUpcoming = data.upcoming;
+    window._lastKpi       = data.kpi;
+    window._lastUpcoming  = data.upcoming;
+    window._lastTopCust   = data.topCustomers;
     renderKPI(data.kpi);
     renderAlerts(data.activeAlerts);
     renderChart(data.byMonth);
     renderUpcomingMini(data.upcoming);
     renderRecentImports();
+    renderCustChart(data.topCustomers);
   } catch (e) {
     console.error('loadDashboard error:', e.message);
     renderKPIFallback();
@@ -1204,6 +1211,14 @@ function renderKPI(kpi) {
       <div class="kpi-label">${L.totalImp}</div>
       <div class="kpi-value" style="color:var(--blue)">${kpi.total}</div>
       <div class="kpi-sub">${kpi.totalOK} OK · ${kpi.totalLate} ${currentLang==='vi'?'Trễ':'Late'}</div>
+    </div>
+    <div class="kpi ${(kpi.thisLateRate||0)>(kpi.prevRate||0)?'red':'green'}" onclick="navTo('alerts',null)">
+      <div class="kpi-label">${currentLang==='vi'?'Trễ tháng này vs tháng trước':'Late rate vs last month'}</div>
+      <div class="kpi-value" style="color:${(kpi.thisLateRate||0)>(kpi.prevRate||0)?'var(--red)':'var(--teal)'}">${kpi.thisLateRate||0}%</div>
+      <div class="kpi-sub">${currentLang==='vi'?'Tháng trước':'Last month'}: ${kpi.prevRate||0}%</div>
+      <div class="kpi-delta" style="color:${(kpi.thisLateRate||0)>(kpi.prevRate||0)?'var(--red)':'var(--teal)'}">
+        ${(kpi.thisLateRate||0)>(kpi.prevRate||0)?'▲':'▼'} ${Math.abs((kpi.thisLateRate||0)-(kpi.prevRate||0))}% ${(kpi.thisLateRate||0)>(kpi.prevRate||0)?(currentLang==='vi'?'tăng':'worse'):(currentLang==='vi'?'giảm':'better')}
+      </div>
     </div>`;
 
   // ── EXPORT KPIs (3 thẻ) — tính từ exportData
@@ -1361,6 +1376,37 @@ function renderAlerts(alerts) {
     <td style="font-weight:600;color:var(--red)">${r.days||'–'} ${currentLang==='vi'?'ngày':'days'}</td>
     <td style="font-size:10px;color:var(--text2);max-width:200px">${r.reasons||'–'}</td>
   </tr>`).join('') || `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có lô trễ':'No late shipments'}</td></tr>`;
+}
+
+let custChart = null;
+function renderCustChart(customers) {
+  const canvas = document.getElementById('custChart');
+  if (!canvas || !customers?.length) return;
+  if (custChart) { custChart.destroy(); custChart = null; }
+  const colors = ['#0EA47A','#2469B3','#E8A020','#D94040','#6366f1'];
+  custChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: customers.map(c => c.name),
+      datasets: [{
+        data: customers.map(c => c.qty),
+        backgroundColor: colors,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.raw.toLocaleString() + ' PCS' } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { font: { size: 10 },
+          callback: v => v >= 1000 ? (v/1000).toFixed(0)+'K' : v } }
+      }
+    }
+  });
 }
 
 function renderChart(byMonth) {
