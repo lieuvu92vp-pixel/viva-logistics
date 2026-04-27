@@ -1670,23 +1670,38 @@ function downloadExportTable() {
 
 function renderUpcoming() {
   const L = t();
-  const now  = new Date();
-  const in7  = new Date(now); in7.setDate(now.getDate() + 7);
+  const now = new Date();
+  const in7 = new Date(now); in7.setDate(now.getDate() + 7);
 
   const items = exportData
     .filter(r => r.customer && !r.actualDate && r.plannedDate)
     .sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
 
-  // Nhóm theo ngày
-  const byDate = {};
+  // ── Group theo LÔ: ngày + brand + nước + transport
+  const lots = {};
   items.forEach(d => {
-    const key = d.plannedDate || '–';
-    if (!byDate[key]) byDate[key] = [];
-    byDate[key].push(d);
+    const key = `${d.plannedDate}||${d.customer}||${d.country}||${d.transport||'SEA'}`;
+    if (!lots[key]) lots[key] = {
+      plannedDate: d.plannedDate, customer: d.customer,
+      country: d.country, transport: d.transport||'SEA',
+      totalQty: 0, lines: []
+    };
+    lots[key].totalQty += Number(d.qty)||0;
+    lots[key].lines.push({ style: d.style, po: d.po, hqCode: d.hqCode, qty: Number(d.qty)||0 });
+  });
+
+  const sorted = Object.values(lots).sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
+
+  // ── Group lots theo ngày để hiện ngày 1 lần
+  const byDate = {};
+  sorted.forEach(lot => {
+    const dk = lot.plannedDate;
+    if (!byDate[dk]) byDate[dk] = [];
+    byDate[dk].push(lot);
   });
 
   let curMonth = '';
-  const html = Object.entries(byDate).map(([date, rows]) => {
+  const html = Object.entries(byDate).map(([date, dayLots]) => {
     const p = getDateParts(date);
     const mLabel = L.months[p.monthIdx] + ' ' + p.year;
     const pd = parseDate(date);
@@ -1698,28 +1713,41 @@ function renderUpcoming() {
       header = `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:12px 0 6px;margin-top:4px">${mLabel}</div>`;
     }
 
-    const rowsHtml = rows.map((d, i) => {
-      const qty = Number(d.qty);
-      return `<div class="upc-item" style="position:relative${i>0?';padding-top:6px':''}">
-        ${isNext7 ? '<div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:70%;background:var(--teal);border-radius:99px"></div>' : ''}
-        <div class="upc-date-box">
-          ${i===0 ? `<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div>` : '<div style="min-width:40px"></div>'}
-        </div>
-        <div class="upc-info">
-          <div class="upc-name" style="display:flex;align-items:center;gap:6px">
-            ${d.customer||'–'} — ${d.country||'–'}
-            ${isNext7 ? `<span class="chip ch-ok" style="font-size:9px">${currentLang==='vi'?'7 ngày tới':'Next 7 days'}</span>` : ''}
+    const lotsHtml = dayLots.map((lot, lotIdx) => {
+      const transport = lot.transport.toUpperCase();
+      const tColor = transport === 'AIR' ? 'var(--amber)' : transport === 'TRUCK' ? 'var(--teal2)' : 'var(--blue)';
+
+      // Mỗi dòng mã nhà máy trong lô
+      const linesHtml = lot.lines.map(line => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0 2px 8px;border-left:2px solid var(--border);margin-left:4px">
+          <span style="font-size:10px;color:var(--text2)">${line.style||'–'} · PO: ${line.po||'–'}${line.hqCode?' · '+line.hqCode:''}</span>
+          <span style="font-size:10px;color:var(--text3);font-weight:500">${line.qty>0?line.qty.toLocaleString():''} PCS</span>
+        </div>`).join('');
+
+      return `<div class="upc-item" style="position:relative;flex-direction:column;align-items:stretch;padding:10px 0${lotIdx>0?';border-top:1px solid var(--border)':''}">
+        ${isNext7?'<div style="position:absolute;left:-8px;top:0;bottom:0;width:3px;background:var(--teal);border-radius:99px"></div>':''}
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="upc-date-box" style="flex-shrink:0">
+            ${lotIdx===0?`<div class="upc-day">${p.day}</div><div class="upc-month">${L.months[p.monthIdx]}</div>`:'<div style="min-width:40px"></div>'}
           </div>
-          <div class="upc-meta">${d.style||'–'} · PO: ${d.po||'–'} · ${d.transport||'Sea'}</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-size:13px;font-weight:700">${lot.customer||'–'} — ${lot.country||'–'}</span>
+              <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${tColor}22;color:${tColor}">${transport}</span>
+              ${isNext7?`<span class="chip ch-ok" style="font-size:9px">${currentLang==='vi'?'7 ngày tới':'Next 7 days'}</span>`:''}
+              <span style="font-size:10px;color:var(--text3)">${lot.lines.length} ${currentLang==='vi'?'mã hàng':'styles'}</span>
+            </div>
+          </div>
+          <div class="upc-qty" style="flex-shrink:0">
+            <div class="upc-qty-val">${lot.totalQty>0?lot.totalQty.toLocaleString():'–'}</div>
+            <div class="upc-qty-lbl">${L.pcs}</div>
+          </div>
         </div>
-        <div class="upc-qty">
-          <div class="upc-qty-val">${isNaN(qty)||qty===0?'–':qty.toLocaleString()}</div>
-          <div class="upc-qty-lbl">${L.pcs}</div>
-        </div>
+        <div style="margin-left:52px;margin-top:4px">${linesHtml}</div>
       </div>`;
     }).join('');
 
-    return header + rowsHtml;
+    return header + lotsHtml;
   }).join('');
 
   document.getElementById('upcomingFull').innerHTML = html ||
