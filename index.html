@@ -844,7 +844,27 @@ function applyLang() {
     if (!row) return;
     const cells = row.querySelectorAll('th');
     const texts = isEN ? hdrs.en : hdrs.vi;
-    cells.forEach((th, i) => { if (texts[i]) th.textContent = texts[i]; });
+    cells.forEach((th, i) => {
+      if (!texts[i]) return;
+      // Nếu th có .col-filter-wrap thì chỉ update text node đầu tiên, giữ nút ▼
+      const wrap = th.querySelector('.col-filter-wrap');
+      if (wrap) {
+        // Tìm text node hoặc span đầu tiên trong wrap
+        const spanEl = wrap.querySelector('span');
+        if (spanEl) { spanEl.textContent = texts[i]; return; }
+        // Không có span thì update text node trực tiếp
+        for (const node of wrap.childNodes) {
+          if (node.nodeType === 3 && node.textContent.trim()) {
+            node.textContent = texts[i] + ' '; return;
+          }
+        }
+        // Fallback: thêm text node trước button
+        const btn = wrap.querySelector('button');
+        if (btn) wrap.insertBefore(document.createTextNode(texts[i] + ' '), btn);
+      } else {
+        th.textContent = texts[i];
+      }
+    });
   });
 
   // 5. Filter dropdowns
