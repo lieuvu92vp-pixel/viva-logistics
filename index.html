@@ -1082,9 +1082,13 @@ function bootApp() {
   document.getElementById('appShell').classList.remove('hidden');
   renderUserInfo();
   if (session.role === 'KHO') document.getElementById('entryNav').style.display = 'none';
-  // Apply lang trước cho static elements
   applyLang();
-  // Load data — render xong thì apply lang lại để dịch KPI cards
+  // Đọc hash từ URL để mở đúng trang
+  const hash = window.location.hash.replace('#','') || 'dashboard';
+  const validPages = ['dashboard','import','alerts','export','upcoming','entry'];
+  const targetPage = validPages.includes(hash) ? hash : 'dashboard';
+  const sbEl = document.querySelector(`.sb-item[onclick*="'${targetPage}'"]`);
+  navTo(targetPage, sbEl);
   Promise.all([loadDashboard(), loadImports(), loadExports()])
     .finally(() => applyLang());
 }
@@ -1120,6 +1124,8 @@ function navTo(id, el) {
   document.getElementById('pageTitle').textContent = t()[id] || pageTitles[id] || id;
   if (el) el.classList.add('active');
   if (id === 'upcoming') renderUpcoming();
+  // Cập nhật URL hash
+  history.replaceState(null, '', '#' + id);
 }
 
 function toggleSidebar() {
