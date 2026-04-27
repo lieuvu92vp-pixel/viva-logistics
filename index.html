@@ -361,57 +361,68 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button class="ab-btn" onclick="navTo('alerts',null)">Xem ngay →</button>
         </div>
 
-        <!-- SECTION: HÀNG NHẬP -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <div style="width:4px;height:20px;background:var(--blue);border-radius:99px"></div>
-          <div id="sec-import-label" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)" data-vi="HÀNG NHẬP" data-en="IMPORTS">HÀNG NHẬP</div>
-        </div>
-        <div class="kpi-row" id="kpiRowImport">
-          <div class="loading"><div class="spinner"></div>Đang tải...</div>
-        </div>
+        <!-- 2 CỘT: TRÁI = NHẬP | PHẢI = XUẤT -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
 
-        <!-- SECTION: HÀNG XUẤT -->
-        <div style="display:flex;align-items:center;gap:10px;margin:4px 0 6px">
-          <div style="width:4px;height:20px;background:var(--teal);border-radius:99px"></div>
-          <div id="sec-export-label" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)" data-vi="HÀNG XUẤT" data-en="EXPORTS">HÀNG XUẤT</div>
-        </div>
-        <div class="kpi-row" id="kpiRowExport">
-          <div class="loading"><div class="spinner"></div>Đang tải...</div>
-        </div>
-
-        <div class="g2">
-          <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
-            <div class="card-body"><div style="position:relative;height:230px"><canvas id="monthChart" role="img" aria-label="Biểu đồ nhập hàng theo tháng"></canvas></div></div>
-            <div style="display:flex;gap:16px;padding:0 16px 14px;font-size:11px;color:var(--text2)">
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span><span id="legend-ok" data-vi="Đúng hạn" data-en="On time">Đúng hạn</span></span>
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span><span id="legend-late" data-vi="Trễ hạn" data-en="Late">Trễ hạn</span></span>
+          <!-- ═══ CỘT TRÁI: HÀNG NHẬP ═══ -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:4px;height:18px;background:var(--blue);border-radius:99px"></div>
+              <div id="sec-import-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--blue)" data-vi="HÀNG NHẬP" data-en="IMPORTS">HÀNG NHẬP</div>
+            </div>
+            <!-- KPI nhập: 2 cột -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="kpiRowImport">
+              <div class="loading"><div class="spinner"></div>Đang tải...</div>
+            </div>
+            <!-- Biểu đồ tiến độ nhập -->
+            <div class="card">
+              <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
+              <div class="card-body"><div style="position:relative;height:200px"><canvas id="monthChart" role="img"></canvas></div></div>
+              <div style="display:flex;gap:16px;padding:0 16px 12px;font-size:11px;color:var(--text2)">
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span><span id="legend-ok" data-vi="Đúng hạn" data-en="On time">Đúng hạn</span></span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span><span id="legend-late" data-vi="Trễ hạn" data-en="Late">Trễ hạn</span></span>
+              </div>
+            </div>
+            <!-- % Trễ theo phương thức -->
+            <div class="card">
+              <div class="card-head"><div class="card-title" id="ct-laterate">% Trễ theo phương thức</div><div class="card-sub" data-vi="Tháng 1→3 / 2026" data-en="Jan→Mar / 2026">Tháng 1→3 / 2026</div></div>
+              <div class="card-body">
+                <div class="prog-wrap"><div class="prog-label">Express</div><div class="prog-track"><div class="prog-fill" style="width:87%;background:var(--red)"></div></div><div class="prog-val" style="color:var(--red)">12.5%</div></div>
+                <div class="prog-wrap"><div class="prog-label">Truck</div><div class="prog-track"><div class="prog-fill" style="width:63%;background:var(--amber)"></div></div><div class="prog-val" style="color:var(--amber)">6.3%</div></div>
+                <div class="prog-wrap"><div class="prog-label">Container</div><div class="prog-track"><div class="prog-fill" style="width:54%;background:var(--blue)"></div></div><div class="prog-val" style="color:var(--blue)">5.4%</div></div>
+                <div class="prog-wrap" style="margin:0"><div class="prog-label">CFS / XNKTC</div><div class="prog-track"><div class="prog-fill" style="width:30%;background:var(--border2)"></div></div><div class="prog-val">3.1%</div></div>
+                <div style="font-size:10px;color:var(--text3);margin-top:10px" data-vi="Express trễ nhiều nhất — DHL không giao T7 & CN" data-en="Express has most delays — DHL no delivery Sat & Sun">Express trễ nhiều nhất — DHL không giao T7 & CN</div>
+              </div>
+            </div>
+            <!-- Lô nhập về kho gần đây -->
+            <div class="card">
+              <div class="card-head"><div class="card-title" id="ct-recent">Lô nhập về kho gần đây</div><div class="card-link" id="lnk-recent" data-vi="Xem tất cả" data-en="View all" onclick="navTo('import',null)">Xem tất cả</div></div>
+              <div class="tbl-wrap"><table class="tbl"><thead id="th-recent"><tr><th data-vi="Shipper" data-en="Shipper">Shipper</th><th data-vi="Về kho" data-en="Arrival">Về kho</th><th data-vi="Ngày" data-en="Days">Ngày</th><th data-vi="Trạng thái" data-en="Status">Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
             </div>
           </div>
-          <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" id="lnk-upcoming" data-vi="Xem tất cả →" data-en="View all →" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
-            <div class="card-body" id="upcomingMini"><div class="loading"><div class="spinner"></div></div></div>
-          </div>
-        </div>
-        <div class="g2b">
-          <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-laterate">% Trễ theo phương thức</div><div class="card-sub" data-vi="Tháng 1→3 / 2026" data-en="Jan→Mar / 2026">Tháng 1→3 / 2026</div></div>
-            <div class="card-body">
-              <div class="prog-wrap"><div class="prog-label">Express</div><div class="prog-track"><div class="prog-fill" style="width:87%;background:var(--red)"></div></div><div class="prog-val" style="color:var(--red)">12.5%</div></div>
-              <div class="prog-wrap"><div class="prog-label">Truck</div><div class="prog-track"><div class="prog-fill" style="width:63%;background:var(--amber)"></div></div><div class="prog-val" style="color:var(--amber)">6.3%</div></div>
-              <div class="prog-wrap"><div class="prog-label">Container</div><div class="prog-track"><div class="prog-fill" style="width:54%;background:var(--blue)"></div></div><div class="prog-val" style="color:var(--blue)">5.4%</div></div>
-              <div class="prog-wrap" style="margin:0"><div class="prog-label">CFS / XNKTC</div><div class="prog-track"><div class="prog-fill" style="width:30%;background:var(--border2)"></div></div><div class="prog-val">3.1%</div></div>
-              <div style="font-size:10px;color:var(--text3);margin-top:10px" data-vi="Express trễ nhiều nhất — DHL không giao T7 & CN" data-en="Express has most delays — DHL no delivery Sat & Sun">Express trễ nhiều nhất — DHL không giao T7 & CN</div>
-            </div>
 
-          <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-custchart">Top 5 khách hàng xuất nhiều nhất</div><div class="card-sub" id="cs-custchart">Tổng PCS 2026</div></div>
-            <div class="card-body"><div style="position:relative;height:200px"><canvas id="custChart"></canvas></div></div>
-          </div>          </div>
-          <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-recent">Lô nhập về kho gần đây</div><div class="card-link" id="lnk-recent" data-vi="Xem tất cả" data-en="View all" onclick="navTo('import',null)">Xem tất cả</div></div>
-            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent"><tr><th data-vi="Shipper" data-en="Shipper">Shipper</th><th data-vi="Về kho" data-en="Arrival">Về kho</th><th data-vi="Ngày" data-en="Days">Ngày</th><th data-vi="Trạng thái" data-en="Status">Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
+          <!-- ═══ CỘT PHẢI: HÀNG XUẤT ═══ -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:4px;height:18px;background:var(--teal);border-radius:99px"></div>
+              <div id="sec-export-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--teal)" data-vi="HÀNG XUẤT" data-en="EXPORTS">HÀNG XUẤT</div>
+            </div>
+            <!-- KPI xuất: 2 cột -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="kpiRowExport">
+              <div class="loading"><div class="spinner"></div>Đang tải...</div>
+            </div>
+            <!-- Xuất hàng sắp tới -->
+            <div class="card">
+              <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" id="lnk-upcoming" data-vi="Xem tất cả →" data-en="View all →" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
+              <div class="card-body" id="upcomingMini"><div class="loading"><div class="spinner"></div></div></div>
+            </div>
+            <!-- Top 5 khách hàng xuất -->
+            <div class="card">
+              <div class="card-head"><div class="card-title" id="ct-custchart">Top 5 khách hàng xuất nhiều nhất</div><div class="card-sub" id="cs-custchart">Tổng PCS 2026</div></div>
+              <div class="card-body"><div style="position:relative;height:200px"><canvas id="custChart"></canvas></div></div>
+            </div>
           </div>
+
         </div>
       </div>
 
