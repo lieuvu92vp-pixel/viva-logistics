@@ -411,8 +411,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
             <div style="display:flex;gap:6px;flex:1;min-width:200px">
-              <input class="fb-input" style="flex:1" placeholder="Tìm bill no, INV no, CD no, container..." id="impSearch" oninput="filterImport()" onkeydown="if(event.key==='Enter')filterImport()">
-              <button onclick="filterImport()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">🔍 Tìm</button>
+              <input class="fb-input" style="flex:1" placeholder="Tìm bill no, INV no, CD no, container..." id="impSearch" oninput="filterImport()">
             </div>
             <select class="fb-select" id="impStatus" onchange="filterImport()">
               <option value="">Tất cả trạng thái</option>
@@ -494,8 +493,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
             <div style="display:flex;gap:6px;flex:1;min-width:200px">
-              <input class="fb-input" style="flex:1" placeholder="Tìm khách hàng, style, PO..." id="expSearch" oninput="filterExport()" onkeydown="if(event.key==='Enter')filterExport()">
-              <button onclick="filterExport()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">🔍 Tìm</button>
+              <input class="fb-input" style="flex:1" placeholder="Tìm khách hàng, style, PO..." id="expSearch" oninput="filterExport()">
             </div>
             <select class="fb-select" id="expStatus" onchange="filterExport()">
               <option value="">Tất cả trạng thái</option>
@@ -511,6 +509,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <option value="AIR">AIR</option>
               <option value="TRUCK">TRUCK</option>
             </select>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-size:11px;color:var(--text2);white-space:nowrap">Ngày xuất:</span>
+              <input type="date" class="fb-input" id="expDateFrom" style="width:130px" onchange="filterExport()" title="Từ ngày">
+              <span style="font-size:11px;color:var(--text2)">→</span>
+              <input type="date" class="fb-input" id="expDateTo" style="width:130px" onchange="filterExport()" title="Đến ngày">
+              <button onclick="clearExpDateFilter()" style="padding:5px 8px;font-size:10px;color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);cursor:pointer" title="Xóa filter ngày">✕</button>
+            </div>
             <span class="fb-count" id="expCount"></span>
             <button onclick="downloadExportTable()" style="padding:6px 12px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap">⬇️ Tải bảng</button>
           </div>
@@ -1602,11 +1607,29 @@ function filterExport() {
   const st = document.getElementById('expStatus')?.value||'';
   const tr = document.getElementById('expTransport')?.value||'';
 
-  let filtered = exportData.filter(r =>
-    (!q  || [r.customer,r.style,r.po,r.country].some(v=>(v||'').toLowerCase().includes(q))) &&
-    (!st || r.status === st) &&
-    (!tr || r.transport === tr)
-  );
+  const dateFrom = document.getElementById('expDateFrom')?.value||'';
+  const dateTo   = document.getElementById('expDateTo')?.value||'';
+
+  let filtered = exportData.filter(r => {
+    const pd = r.plannedDate; // DD/MM/YYYY
+    const ad = r.actualDate;
+    // Dùng planned hoặc actual date để filter
+    const checkDate = pd || ad;
+    // Convert DD/MM/YYYY -> YYYY-MM-DD để compare
+    const toISO = v => {
+      if (!v) return '';
+      const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      return m ? `${m[3]}-${m[2]}-${m[1]}` : v;
+    };
+    const dISO = toISO(checkDate);
+    return (
+      (!q  || [r.customer,r.style,r.po,r.country].some(v=>(v||'').toLowerCase().includes(q))) &&
+      (!st || r.status === st) &&
+      (!tr || r.transport === tr) &&
+      (!dateFrom || dISO >= dateFrom) &&
+      (!dateTo   || dISO <= dateTo)
+    );
+  });
   filtered = applyColFilters(filtered, 'exp');
   if (expSortCol) {
     filtered.sort((a,b) => {
@@ -1654,6 +1677,14 @@ function filterExport() {
     </tr>`;
   }).join('')
   : `<tr><td colspan="21" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
+}
+
+function clearExpDateFilter() {
+  const f = document.getElementById('expDateFrom');
+  const t = document.getElementById('expDateTo');
+  if (f) f.value = '';
+  if (t) t.value = '';
+  filterExport();
 }
 
 function downloadExportTable() {
