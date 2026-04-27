@@ -2212,14 +2212,17 @@ function openColFilter(event, table, field, label) {
     </div>
     <div class="col-filter-list" id="cfList">
       ${allVals.map(v => `
-        <label class="col-filter-item">
-          <input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${selected.has(v)?'checked':''} onchange="cfToggle(this,'${table}','${field}')">
+        <div class="col-filter-item" onclick="cfItemClick(event,'${table}','${field}')">
+          <input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${selected.has(v)?'checked':''} onclick="event.stopPropagation()" onchange="cfToggle(this,'${table}','${field}')">
           <span>${v}</span>
-        </label>`).join('')}
+        </div>`).join('')}
     </div>
     <div class="col-filter-apply">
       <button onclick="cfApply('${table}','${field}')">Áp dụng</button>
     </div>`;
+
+  // Ngăn click bên trong dropdown lan ra ngoài
+  dd.addEventListener('click', e => e.stopPropagation());
 
   document.body.appendChild(dd);
   _cfDropdown = { dd, table, field, btn };
@@ -2230,8 +2233,14 @@ function openColFilter(event, table, field, label) {
   // Focus search
   setTimeout(() => document.getElementById('cfSearch')?.focus(), 50);
 
-  // Close khi click ngoài
-  setTimeout(() => document.addEventListener('click', closeColFilter, { once: true }), 10);
+  // Close khi click ngoài (không phải bên trong dropdown)
+  const outsideClick = (e) => {
+    if (!dd.contains(e.target) && e.target !== btn) {
+      closeColFilter();
+      document.removeEventListener('click', outsideClick);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', outsideClick), 10);
 }
 
 function closeColFilter() {
@@ -2245,6 +2254,14 @@ function cfSearchFilter() {
   document.querySelectorAll('#cfList .col-filter-item').forEach(el => {
     el.style.display = el.querySelector('span').textContent.toLowerCase().includes(q) ? '' : 'none';
   });
+}
+
+function cfItemClick(event, table, field) {
+  // Click vào div → toggle checkbox con
+  const cb = event.currentTarget.querySelector('input[type=checkbox]');
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  cfToggle(cb, table, field);
 }
 
 function cfToggle(checkbox, table, field) {
