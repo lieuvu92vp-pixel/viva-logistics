@@ -1204,7 +1204,7 @@ function renderExportKPI() {
 
   // Hàm đếm lô duy nhất (ngày + brand + nước = 1 lô)
   const countUniqueLots = (rows) => {
-    const keys = new Set(rows.map(r => `${r.plannedDate||r.actualDate}||${r.customer}||${r.country}`));
+    const keys = new Set(rows.map(r => `${r.plannedDate||r.actualDate}||${r.customer}||${r.country}||${r.transport||''}`));
     return keys.size;
   };
 
