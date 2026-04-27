@@ -406,6 +406,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <th style="text-align:right">Kiện</th>
                 <th style="text-align:right">KG</th>
                 <th style="cursor:pointer" onclick="sortImport('arrival')">Về kho ↕</th>
+                <th>Giờ về kho</th>
                 <th style="text-align:center">Ngày XL</th>
                 <th>Trạng thái</th><th>Ghi chú</th><th></th>
               </tr></thead>
@@ -590,7 +591,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                     <div class="f-group"><label>Nước xuất xứ *</label><input type="text" id="f_country" placeholder="CN, VN, JP..."></div>
                     <div class="f-group"><label>ETA *</label><input type="date" id="f_eta" onchange="recalcDays()"></div>
                     <div class="f-group"><label>Phương thức *</label>
-                      <select id="f_mode" onchange="updateTarget()">
+                      <select id="f_mode" onchange="updateTarget();onModeChange()">
                         <option value="">Chọn mode...</option>
                         <option value="FCL">FCL – Container</option><option value="CFS">CFS</option>
                         <option value="TRUCK">TRUCK</option><option value="Express">Express / DHL</option>
@@ -600,6 +601,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                     <div class="f-group"><label>Số kiện *</label><input type="number" id="f_packages" min="0" placeholder="0"></div>
                     <div class="f-group"><label>Cân nặng (kg) *</label><input type="number" id="f_weight" step="0.1" placeholder="0.0"></div>
                     <div class="f-group"><label>Ngày về kho</label><input type="date" id="f_arrival" onchange="recalcDays()"></div>
+                    <div class="f-group"><label>Giờ về kho <span id="f_atime_req" style="color:var(--red);display:none">*</span></label><input type="time" id="f_arrivaltime" placeholder="HH:MM" oninput="validateArrivalTime()"></div>
                     <div class="f-group"><label>Số ngày xử lý</label><input class="auto" type="text" id="f_days" readonly></div>
                     <div class="f-group"><label>Target (ngày)</label><input class="auto" type="text" id="f_target" readonly></div>
                     <div class="f-group"><label>Trạng thái</label><input class="auto" type="text" id="f_status" readonly></div>
@@ -776,8 +778,8 @@ function applyLang() {
   // 4. Table headers
   const tblHeaders = {
     'th-import': {
-      vi: ['STT','ETA','Mode','Loại hàng','Bill No','INV No','CD No','CD Date','Kiện','KG','Về kho','Ngày XL','Trạng thái','Ghi chú',''],
-      en: ['No.','ETA','Mode','Goods type','Bill No','INV No','CD No','CD Date','Pkgs','KG','Arrival','Days','Status','Note',''],
+      vi: ['STT','ETA','Mode','Loại hàng','Bill No','INV No','CD No','CD Date','Kiện','KG','Về kho','Giờ về kho','Ngày XL','Trạng thái','Ghi chú',''],
+      en: ['No.','ETA','Mode','Goods type','Bill No','INV No','CD No','CD Date','Pkgs','KG','Arrival','Arrival time','Days','Status','Note',''],
     },
     'th-export': {
       vi: ['STT','Khách hàng','Nước XK','Mã nhà máy','Mã hải quan','Mã KH','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Cut SI','Cut CY/CFS','Xe đến','Xe đi','Truck-Cont','Cont. Seal','C/O','Trạng thái','Ghi chú',''],
@@ -1487,12 +1489,13 @@ function filterImport() {
     <td style="text-align:right">${r.packages||0}</td>
     <td style="text-align:right">${Number(r.weight||0).toLocaleString()}</td>
     <td style="font-size:11px">${r.arrival||'–'}</td>
+    <td style="font-size:11px;color:${r.shipMode==='FCL'&&!r.arrivalTime?'var(--red)':'var(--text2)'}">${r.arrivalTime||'–'}</td>
     <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':Number(r.days)>3?'var(--red)':Number(r.days)>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
     <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${r.status||'–'}</span></td>
     <td style="font-size:10px;color:var(--text3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
     <td><button onclick="openEditImport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button></td>
   </tr>`).join('')
-  : `<tr><td colspan="15" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
+  : `<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
 }
 
 function downloadImportTable() {
@@ -1753,6 +1756,19 @@ function updateTarget() {
   recalcDays();
 }
 
+function validateArrivalTime() {
+  const el = document.getElementById('f_arrivaltime');
+  if (el && el.value) { el.style.border=''; el.style.background=''; }
+}
+
+function onModeChange() {
+  const mode = document.getElementById('f_mode').value;
+  const req  = document.getElementById('f_atime_req');
+  const el   = document.getElementById('f_arrivaltime');
+  if (req) req.style.display = mode === 'FCL' ? 'inline' : 'none';
+  if (el && mode !== 'FCL') { el.style.border=''; el.style.background=''; }
+}
+
 function recalcDays() {
   const eta  = document.getElementById('f_eta').value;
   const arr  = document.getElementById('f_arrival').value;
@@ -1779,11 +1795,21 @@ async function submitNewImport() {
   const pkgs    = document.getElementById('f_packages').value;
   const kg      = document.getElementById('f_weight').value;
   const arr     = document.getElementById('f_arrival').value;
+  const atime   = document.getElementById('f_arrivaltime').value;
   if (!shipper||!eta||!mode||!pkgs||!kg||!arr) { showToast('Vui lòng điền đủ 6 trường bắt buộc','error'); return; }
+  // Validation FCL: bắt buộc điền giờ về kho
+  if (mode === 'FCL' && !atime) {
+    const el = document.getElementById('f_arrivaltime');
+    el.style.border = '1.5px solid var(--red)';
+    el.style.background = '#fff0f0';
+    el.focus();
+    showToast('⚠️ Mode FCL bắt buộc phải điền Giờ về kho!', 'error');
+    return;
+  }
   try {
     const res = await api('addImport', {
       shipper, country:document.getElementById('f_country').value,
-      eta, arrival:arr, shipMode:mode, packages:pkgs, weight:kg,
+      eta, arrival:arr, arrivalTime:atime, shipMode:mode, packages:pkgs, weight:kg,
       vessel:document.getElementById('f_vessel').value,
       cdNo:document.getElementById('f_cdno').value,
       billNo:document.getElementById('f_billno').value,
@@ -1796,7 +1822,7 @@ async function submitNewImport() {
 }
 
 function clearForm() {
-  ['f_shipper','f_country','f_eta','f_arrival','f_vessel','f_cdno','f_billno','f_forwarder','f_reasons'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['f_shipper','f_country','f_eta','f_arrival','f_arrivaltime','f_vessel','f_cdno','f_billno','f_forwarder','f_reasons'].forEach(id => { const el = document.getElementById(id); if(el) { el.value = ''; el.style.border=''; el.style.background=''; } });
   const mode = document.getElementById('f_mode'); if(mode) mode.value = '';
   const pkgs = document.getElementById('f_packages'); if(pkgs) pkgs.value = '';
   const wgt  = document.getElementById('f_weight');   if(wgt)  wgt.value  = '';
@@ -1896,6 +1922,7 @@ function openEditImport(id) {
       <div class="f-group"><label>Số kiện</label><input class="f-inp" type="number" id="em_packages" value="${r.packages||0}"></div>
       <div class="f-group"><label>Cân nặng (kg)</label><input class="f-inp" type="number" id="em_weight" value="${r.weight||0}"></div>
       <div class="f-group"><label>Ngày về kho</label><input class="f-inp" type="date" id="em_arrival" value="${toInputDate(r.arrival)}"></div>
+      <div class="f-group"><label>Giờ về kho${r.shipMode==='FCL'?' <span style=\"color:var(--red)\">*</span>':''}</label><input class="f-inp" type="time" id="em_arrivaltime" value="${r.arrivalTime||''}" style="${r.shipMode==='FCL'&&!r.arrivalTime?'border:1.5px solid var(--red);background:#fff0f0':''}"></div>
       <div class="f-group"><label>CD No</label><input class="f-inp" id="em_cdno" value="${r.cdNo||''}"></div>
       <div class="f-group"><label>Bill No</label><input class="f-inp" id="em_billno" value="${r.billNo||''}"></div>
       <div class="f-group f-full"><label>Lý do trễ</label><input class="f-inp" id="em_reasons" value="${r.reasons||''}"></div>
@@ -1986,6 +2013,16 @@ async function saveEdit() {
         shipper  : document.getElementById('em_shipper').value,
         eta      : document.getElementById('em_eta').value,
         shipMode : document.getElementById('em_mode').value,
+        arrivalTime: (() => {
+          const md = document.getElementById('em_mode').value;
+          const at = document.getElementById('em_arrivaltime')?.value||'';
+          if (md === 'FCL' && !at) {
+            const el = document.getElementById('em_arrivaltime');
+            if(el){el.style.border='1.5px solid var(--red)';el.style.background='#fff0f0';el.focus();}
+            throw new Error('Mode FCL bắt buộc điền Giờ về kho!');
+          }
+          return at;
+        })(),
         packages : document.getElementById('em_packages').value,
         weight   : document.getElementById('em_weight').value,
         arrival  : document.getElementById('em_arrival').value,
