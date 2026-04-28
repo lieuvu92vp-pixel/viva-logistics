@@ -1119,6 +1119,8 @@ async function doLogin() {
   btn.style.opacity = '0.5';
   btn.style.cursor = 'not-allowed';
   loading.style.display = 'block';
+  // Cho browser 1 frame để render loading trước khi gọi API
+  await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 80)));
 
   const messages = ['Đang xác thực...', 'Đang tải dữ liệu...', 'Chuẩn bị giao diện...'];
   let msgIdx = 0;
