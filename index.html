@@ -410,7 +410,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="card">
             <div class="card-head"><div class="card-title" id="ct-recent">Nhập hàng sắp tới</div><div class="card-link" id="lnk-recent" data-vi="Xem tất cả" data-en="View all" onclick="navTo('import',null)">Xem tất cả</div></div>
-            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent-imp"><tr><th>Shipper</th><th>Mode</th><th>ETA</th><th style="text-align:right">Kiện</th><th style="text-align:right">KG</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
+            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent-imp"><tr><th>Shipper</th><th>Mode</th><th>Về kho</th><th style="text-align:right">Kiện</th><th style="text-align:right">KG</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
           </div>
           <div class="card">
             <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" id="lnk-upcoming" data-vi="Xem tất cả →" data-en="View all →" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
@@ -1694,12 +1694,12 @@ function renderUpcomingMini(items) {
 function renderRecentImports() {
   const now = new Date(); now.setHours(0,0,0,0);
   const in14 = new Date(now); in14.setDate(now.getDate() + 14);
-  // Lô chưa về kho, ETA từ hôm nay đến 14 ngày tới, sắp xếp ETA tăng dần
+  // Lô có Arrival_Date (cột L) từ hôm nay đến 14 ngày tới, sắp xếp tăng dần
   const upcoming = importData
-    .filter(r => !r.arrival && r.eta)
-    .map(r => ({ ...r, _eta: new Date(r.eta.split('/').reverse().join('-')) }))
-    .filter(r => !isNaN(r._eta) && r._eta >= now && r._eta <= in14)
-    .sort((a, b) => a._eta - b._eta)
+    .filter(r => r.arrival)
+    .map(r => ({ ...r, _arr: new Date(r.arrival.split('/').reverse().join('-')) }))
+    .filter(r => !isNaN(r._arr) && r._arr >= now && r._arr <= in14)
+    .sort((a, b) => a._arr - b._arr)
     .slice(0, 8);
 
   const el = document.getElementById('recentImpTbl');
@@ -1715,7 +1715,7 @@ function renderRecentImports() {
     return `<tr>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.shipper}">${r.shipper}</td>
       <td><span class="chip ch-info" style="font-size:10px">${r.shipMode||'–'}</span></td>
-      <td style="font-size:11px">${r.eta}</td>
+      <td style="font-size:11px">${r.arrival}</td>
       <td style="text-align:right;font-size:11px">${r.packages||'–'}</td>
       <td style="text-align:right;font-size:11px">${Number(r.weight||0).toLocaleString()}</td>
     </tr>`;
