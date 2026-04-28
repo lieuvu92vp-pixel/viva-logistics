@@ -300,14 +300,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-label" data-vi="Tổng quan" data-en="Overview">Tổng quan</div>
       <div class="sb-item active" onclick="navTo('dashboard',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-        <span data-vi="Dashboard" data-en="Dashboard" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Dashboard</span><span class="sb-line2" style="font-size:9px;opacity:.55">Bảng tổng quan</span></span>
+        <span data-vi="Dashboard" data-en="Dashboard" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Bảng tổng quan</span><span class="sb-line2" style="font-size:9px;opacity:.55">Dashboard</span></span>
       </div>
     </div>
     <div class="sb-section">
       <div class="sb-label" data-vi="Hàng nhập" data-en="Imports">Hàng nhập</div>
       <div class="sb-item" onclick="navTo('import',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v9M5 8l3 3 3-3"/><path d="M2 13h12"/></svg>
-        <span data-vi="Import schedule" data-en="Import schedule" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Import schedule</span><span class="sb-line2" style="font-size:9px;opacity:.55">Danh sách nhập</span></span>
+        <span data-vi="Import schedule" data-en="Import schedule" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Danh sách nhập</span><span class="sb-line2" style="font-size:9px;opacity:.55">Import schedule</span></span>
       </div>
       <div class="sb-item" onclick="navTo('alerts',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2a5 5 0 015 5c0 3 1 4 1 4H2s1-1 1-4a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
@@ -319,7 +319,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-label" data-vi="Hàng xuất" data-en="Exports">Hàng xuất</div>
       <div class="sb-item" onclick="navTo('export',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 14V5M5 8l3-3 3 3"/><path d="M2 3h12"/></svg>
-        <span data-vi="Loading schedule" data-en="Loading schedule" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Loading schedule</span><span class="sb-line2" style="font-size:9px;opacity:.55">Danh sách xuất</span></span>
+        <span data-vi="Loading schedule" data-en="Loading schedule" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Danh sách xuất</span><span class="sb-line2" style="font-size:9px;opacity:.55">Loading schedule</span></span>
       </div>
       <div class="sb-item" onclick="navTo('upcoming',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v3M11 1v3M2 7h12"/></svg>
@@ -330,7 +330,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-label" data-vi="Nhập liệu" data-en="Data Entry">Nhập liệu</div>
       <div class="sb-item" onclick="navTo('entry',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg>
-        <span data-vi="Upload / Nhập mới" data-en="Upload / New entry">Upload / Nhập mới</span>
+        <span data-vi="Upload / Nhập mới" data-en="Upload / New entry" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Upload / Nhập mới</span><span class="sb-line2" style="font-size:9px;opacity:.55">New entry</span></span>
       </div>
     </div>
     <div class="sb-user" id="sbUser"></div>
@@ -828,17 +828,18 @@ function applyLang() {
         line1.textContent = enText;
         line2.style.display = 'none';
       } else {
-        // VI: giữ nguyên line1 (tên chính không đổi)
-        // line1.textContent = viText; // không cần đổi vì đã hardcode đúng
+        line2.style.display = '';
         line2.style.display = '';
         // line2 là bản dịch tiếng anh
         // VI mode: line1=tên chính, line2=tên phụ tiếng Việt/Anh
+        // VI mode: line1=tiếng Việt, line2=tiếng Anh
         const line2Map = {
-          'Dashboard'        : 'Bảng tổng quan',
-          'Import schedule'  : 'Danh sách nhập',
+          'Bảng tổng quan'   : 'Dashboard',
+          'Danh sách nhập'   : 'Import schedule',
           'Cảnh báo trễ'     : 'Late alerts',
-          'Loading schedule' : 'Danh sách xuất',
+          'Danh sách xuất'   : 'Loading schedule',
           'Lịch xuất sắp tới': 'Upcoming exports',
+          'Upload / Nhập mới': 'New entry',
         };
         line2.textContent = line2Map[viText] || enText;
       }
