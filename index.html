@@ -274,7 +274,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="login-sub" id="loginSubText">Hệ thống theo dõi hàng nhập xuất nội bộ</div>
     <div class="login-field">
       <label id="loginLblUser">Tên đăng nhập</label>
-      <input type="text" id="loginUser" placeholder="Nhập tài khoản" autocomplete="username">
+      <input type="text" id="loginUser" placeholder="Nhập tài khoản" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="login-field">
       <label id="loginLblPass">Mật khẩu</label>
