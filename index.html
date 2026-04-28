@@ -50,6 +50,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sb-item:hover{background:rgba(255,255,255,.07);color:#fff}
 .sb-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--teal)}
 .sb-item svg{flex-shrink:0;opacity:.8;width:16px;height:16px}
+.sb-line1{font-size:12px;font-weight:500;line-height:1.2}
+.sb-line2{font-size:9px;opacity:.55;line-height:1.2}
 .sb-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:99px;padding:1px 6px;font-size:9px;font-weight:600}
 .sb-footer{margin-top:auto;padding:10px 12px;border-top:1px solid rgba(255,255,255,.08);font-size:9px;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:5px}
 .live-dot{width:5px;height:5px;background:#4ade80;border-radius:50%}
@@ -305,11 +307,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-label" data-vi="Hàng nhập" data-en="Imports">Hàng nhập</div>
       <div class="sb-item" onclick="navTo('import',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v9M5 8l3 3 3-3"/><path d="M2 13h12"/></svg>
-        <span data-vi="Import schedule" data-en="Import schedule">Import schedule</span>
+        <span data-vi="Import schedule" data-en="Import schedule" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Import schedule</span><span class="sb-line2">Danh sách nhập</span></span>
       </div>
       <div class="sb-item" onclick="navTo('alerts',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2a5 5 0 015 5c0 3 1 4 1 4H2s1-1 1-4a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
-        <span data-vi="Cảnh báo trễ" data-en="Late alerts">Cảnh báo trễ</span>
+        <span data-vi="Cảnh báo trễ" data-en="Late alerts" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Cảnh báo trễ</span><span class="sb-line2">Late alerts</span></span>
         <span class="sb-badge" id="alertBadge" style="display:none">0</span>
       </div>
     </div>
@@ -317,11 +319,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-label" data-vi="Hàng xuất" data-en="Exports">Hàng xuất</div>
       <div class="sb-item" onclick="navTo('export',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 14V5M5 8l3-3 3 3"/><path d="M2 3h12"/></svg>
-        <span data-vi="Loading schedule" data-en="Loading schedule">Loading schedule</span>
+        <span data-vi="Loading schedule" data-en="Loading schedule" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Loading schedule</span><span class="sb-line2">Danh sách xuất</span></span>
       </div>
       <div class="sb-item" onclick="navTo('upcoming',this)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v3M11 1v3M2 7h12"/></svg>
-        <span data-vi="Lịch xuất sắp tới" data-en="Upcoming exports">Lịch xuất sắp tới</span>
+        <span data-vi="Lịch xuất sắp tới" data-en="Upcoming exports" style="display:flex;flex-direction:column;gap:1px"><span class="sb-line1">Lịch xuất sắp tới</span><span class="sb-line2">Upcoming exports</span></span>
       </div>
     </div>
     <div class="sb-section" id="entryNav">
@@ -812,17 +814,40 @@ function applyLang() {
   const L = t();
   const isEN = currentLang === 'en';
 
-  // 1. Tất cả element có data-vi / data-en (bao gồm th, span, div, label, input)
+  // 1. Tất cả element có data-vi / data-en
   document.querySelectorAll('[data-vi]').forEach(el => {
-    const target = isEN ? (el.dataset.en||el.dataset.vi) : el.dataset.vi;
-    if (!target) return;
+    const viText = el.dataset.vi;
+    const enText = el.dataset.en || viText;
+    if (!viText) return;
+
+    // Xử lý sidebar item có sb-line1/sb-line2
+    const line1 = el.querySelector('.sb-line1');
+    const line2 = el.querySelector('.sb-line2');
+    if (line1 && line2) {
+      if (isEN) {
+        line1.textContent = enText;
+        line2.style.display = 'none';
+      } else {
+        line1.textContent = viText;
+        line2.style.display = '';
+        // line2 là bản dịch tiếng anh
+        const enMap = {
+          'Import schedule': 'Import schedule',
+          'Cảnh báo trễ': 'Late alerts',
+          'Loading schedule': 'Loading schedule',
+          'Lịch xuất sắp tới': 'Upcoming exports',
+        };
+        line2.textContent = enMap[viText] || enText;
+      }
+      return;
+    }
+
+    const target = isEN ? enText : viText;
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       el.placeholder = target;
     } else if (el.children.length === 0) {
-      // Không có con → đổi text trực tiếp
       el.textContent = target;
     } else {
-      // Có con (svg, badge...) → chỉ đổi text node đầu tiên
       const firstText = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
       if (firstText) firstText.textContent = ' ' + target + ' ';
     }
