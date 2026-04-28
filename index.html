@@ -1094,11 +1094,19 @@ function bootApp() {
 }
 
 function renderUserInfo() {
+  // Áp dụng phân quyền
+  const editAllowed = session.canEdit === true || session.role === 'Admin';
+  window._canEdit = editAllowed;
+  // Ẩn menu Nhập liệu nếu không có quyền sửa
+  const entryNav = document.getElementById('entryNav');
+  if (entryNav) entryNav.style.display = editAllowed ? '' : 'none';
+
   const initials = (session.fullName || session.username || 'VV').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('sbUser').innerHTML = `
     <div class="sb-user-ava">${initials}</div>
     <div><div class="sb-user-name">${session.fullName || session.username}</div>
-    <div class="sb-user-role">${{GD:'Ban Giám đốc',TP:'Trưởng bộ phận',NV:'Nhân viên',KHO:'Kho'}[session.role]||session.role}</div>
+    <div class="sb-user-role">${session.role||''}</div>
+    <div style="font-size:9px;padding:1px 6px;border-radius:99px;margin-top:3px;display:inline-block;background:${window._canEdit?'rgba(14,164,122,.25)':'rgba(255,255,255,.1)'};color:${window._canEdit?'#4ade80':'rgba(255,255,255,.5)'}">${window._canEdit?'✏️ Có quyền sửa':'👁 Chỉ xem'}</div>
     <div class="sb-logout" onclick="logout()">Đăng xuất</div></div>`;
 }
 
@@ -1693,7 +1701,7 @@ function filterImport() {
     <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':Number(r.days)>3?'var(--red)':Number(r.days)>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
     <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${r.status||'–'}</span></td>
     <td style="font-size:10px;color:var(--text3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
-    <td><button onclick="openEditImport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button></td>
+    <td>${window._canEdit?`<button onclick="openEditImport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button>`:''}</td>
   </tr>`).join('')
   : `<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
 }
@@ -1800,7 +1808,7 @@ function filterExport() {
       <td style="font-size:10px;color:var(--text2)">${r.containerSeal||'–'}</td>
       <td>${statusChip}</td>
       <td style="font-size:10px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.remarks||''}">${r.remarks||'–'}</td>
-      <td><button onclick="openEditExport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button></td>
+      <td>${window._canEdit?`<button onclick="openEditExport('${r.id}')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);cursor:pointer;color:var(--blue)">✏️</button>`:''}</td>
     </tr>`;
   }).join('')
   : `<tr><td colspan="21" style="text-align:center;padding:24px;color:var(--text3)">${currentLang==='vi'?'Không có dữ liệu':'No data'}</td></tr>`;
