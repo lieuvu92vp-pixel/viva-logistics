@@ -395,11 +395,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <!-- HÀNG 2: Biểu đồ tiến độ | Top 5 khách hàng -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">OK vs NOT OK</div></div>
+            <div class="card-head"><div class="card-title" id="ct-monthly">Tiến độ nhập hàng theo tháng</div><div class="card-sub">✔ Đúng tiến độ &nbsp;✘ Trễ tiến độ</div></div>
             <div class="card-body"><div style="position:relative;height:220px"><canvas id="monthChart" role="img"></canvas></div></div>
             <div style="display:flex;gap:16px;padding:0 16px 12px;font-size:11px;color:var(--text2)">
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span><span id="legend-ok" data-vi="Đúng hạn" data-en="On time">Đúng hạn</span></span>
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span><span id="legend-late" data-vi="Trễ hạn" data-en="Late">Trễ hạn</span></span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></span><span id="legend-ok" data-vi="✔ Đúng tiến độ" data-en="✔ On time">✔ Đúng tiến độ</span></span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red)"></span><span id="legend-late" data-vi="✘ Trễ tiến độ" data-en="✘ Late">✘ Trễ tiến độ</span></span>
             </div>
           </div>
           <div class="card">
@@ -1630,8 +1630,8 @@ function renderChart(byMonth) {
       data:{
         labels: byMonth.map(m => m.label),
         datasets:[
-          {label: currentLang==='vi'?'Đúng hạn':'On time', data:byMonth.map(m=>m.ok),   backgroundColor:'#0EA47A', borderRadius:4, stack:'s'},
-          {label: currentLang==='vi'?'Trễ hạn':'Late',     data:byMonth.map(m=>m.late),  backgroundColor:'#D94040', borderRadius:4, stack:'s'},
+          {label: currentLang==='vi'?'✔ Đúng tiến độ':'✔ On time', data:byMonth.map(m=>m.ok),   backgroundColor:'#0EA47A', borderRadius:4, stack:'s'},
+          {label: currentLang==='vi'?'✘ Trễ tiến độ':'✘ Late',     data:byMonth.map(m=>m.late),  backgroundColor:'#D94040', borderRadius:4, stack:'s'},
         ]
       },
       options:{
