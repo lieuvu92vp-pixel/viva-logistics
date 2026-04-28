@@ -1693,18 +1693,19 @@ function renderUpcomingMini(items) {
 
 function renderRecentImports() {
   const now = new Date(); now.setHours(0,0,0,0);
-  // Lô chưa về kho, ETA từ hôm nay trở đi, sắp xếp ETA tăng dần
+  const in14 = new Date(now); in14.setDate(now.getDate() + 14);
+  // Lô chưa về kho, ETA từ hôm nay đến 14 ngày tới, sắp xếp ETA tăng dần
   const upcoming = importData
     .filter(r => !r.arrival && r.eta)
     .map(r => ({ ...r, _eta: new Date(r.eta.split('/').reverse().join('-')) }))
-    .filter(r => !isNaN(r._eta))
+    .filter(r => !isNaN(r._eta) && r._eta >= now && r._eta <= in14)
     .sort((a, b) => a._eta - b._eta)
     .slice(0, 8);
 
   const el = document.getElementById('recentImpTbl');
   if (!el) return;
   if (!upcoming.length) {
-    el.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--text3)">Không có lô sắp về</td></tr>';
+    el.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--text3)">Không có lô nào sắp về trong 14 ngày tới</td></tr>';
     return;
   }
   el.innerHTML = upcoming.map(r => {
