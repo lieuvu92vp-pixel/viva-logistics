@@ -285,12 +285,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <button class="login-btn" id="loginBtnText" onclick="doLogin()">Đăng nhập</button>
     <div class="login-err" id="loginErr"></div>
-    <div id="loginLoading" style="display:none;margin-top:14px">
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;background:#f0f4ff;border:1px solid #d0deff;border-radius:10px;padding:12px 18px">
-        <div style="width:16px;height:16px;border:2.5px solid #c7d7ff;border-top-color:#2469B3;border-radius:50%;animation:loginSpin .7s linear infinite;flex-shrink:0"></div>
-        <span id="loginLoadingText" style="font-size:13px;font-weight:500;color:#2469B3">Đang xác thực...</span>
-      </div>
-    </div>
+
     <div class="login-hint" id="loginHintText">Liên hệ Daisy để được cấp tài khoản</div>
   </div>
 </div>
@@ -1111,37 +1106,27 @@ async function doLogin() {
   if (!u || !p) { document.getElementById('loginErr').textContent = 'Vui lòng điền đầy đủ'; return; }
   document.getElementById('loginErr').textContent = '';
 
-  // Show loading
+  // Mờ nút + cursor loading
   const btn = document.getElementById('loginBtnText');
-  const loading = document.getElementById('loginLoading');
-  const loadingText = document.getElementById('loginLoadingText');
   btn.disabled = true;
   btn.style.opacity = '0.5';
-  btn.style.cursor = 'not-allowed';
-  loading.style.display = 'block';
-  // Cho browser 1 frame để render loading trước khi gọi API
-  await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 80)));
-
-  const messages = ['Đang xác thực...', 'Đang tải dữ liệu...', 'Chuẩn bị giao diện...'];
-  let msgIdx = 0;
-  const msgTimer = setInterval(() => {
-    msgIdx = (msgIdx + 1) % messages.length;
-    loadingText.textContent = messages[msgIdx];
-  }, 1200);
+  btn.textContent = '⏳ Đang đăng nhập...';
+  document.body.style.cursor = 'wait';
 
   try {
     const res = await api('login', { username: u, password: p }, 'GET', false);
-    loadingText.textContent = '✓ Đăng nhập thành công!';
-    clearInterval(msgTimer);
+    btn.textContent = '✓ Thành công!';
+    btn.style.opacity = '1';
+    btn.style.background = '#0EA47A';
     session = res;
     localStorage.setItem('viva_session', JSON.stringify(session));
-    setTimeout(() => bootApp(), 400);
+    setTimeout(() => bootApp(), 300);
   } catch (e) {
-    clearInterval(msgTimer);
-    loading.style.display = 'none';
     btn.disabled = false;
     btn.style.opacity = '';
-    btn.style.cursor = '';
+    btn.style.background = '';
+    btn.textContent = currentLang === 'en' ? 'Sign in' : 'Đăng nhập';
+    document.body.style.cursor = '';
     document.getElementById('loginErr').textContent = e.message || 'Đăng nhập thất bại';
   }
 }
