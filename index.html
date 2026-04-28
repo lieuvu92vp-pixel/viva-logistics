@@ -410,7 +410,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="card">
             <div class="card-head"><div class="card-title" id="ct-recent">Lô nhập về kho gần đây</div><div class="card-link" id="lnk-recent" data-vi="Xem tất cả" data-en="View all" onclick="navTo('import',null)">Xem tất cả</div></div>
-            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent"><tr><th data-vi="Shipper" data-en="Shipper">Shipper</th><th data-vi="Về kho" data-en="Arrival">Về kho</th><th data-vi="Ngày" data-en="Days">Ngày</th><th data-vi="Trạng thái" data-en="Status">Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
+            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent"><tr><th data-vi="Shipper" data-en="Shipper">Shipper</th><th data-vi="Mode" data-en="Mode">Mode</th><th data-vi="Về kho" data-en="Arrival">Về kho</th><th data-vi="Ngày" data-en="Days">Ngày</th><th data-vi="Trạng thái" data-en="Status">Trạng thái</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
           </div>
           <div class="card">
             <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" id="lnk-upcoming" data-vi="Xem tất cả →" data-en="View all →" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
@@ -1114,11 +1114,17 @@ const pageTitles = {
 function navTo(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
-  document.getElementById('pg-' + id).classList.add('active');
+  const pg = document.getElementById('pg-' + id);
+  if (!pg) return;
+  pg.classList.add('active');
   document.getElementById('pageTitle').textContent = t()[id] || pageTitles[id] || id;
   if (el) el.classList.add('active');
+  // Tự tìm sb-item nếu el null
+  if (!el) {
+    const sbEl = document.querySelector(`.sb-item[onclick*="'${id}'"]`);
+    if (sbEl) sbEl.classList.add('active');
+  }
   if (id === 'upcoming') renderUpcoming();
-  // Cập nhật URL hash
   history.replaceState(null, '', '#' + id);
 }
 
@@ -1637,7 +1643,8 @@ function renderRecentImports() {
   const recent = importData.filter(r => r.arrival).slice(-8).reverse();
   if (!recent.length) return;
   document.getElementById('recentImpTbl').innerHTML = recent.map(r => `<tr>
-    <td class="shipper">${r.shipper}</td>
+    <td class="shipper" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.shipper}</td>
+    <td><span class="chip ch-info" style="font-size:10px">${r.shipMode||'–'}</span></td>
     <td>${r.arrival}</td>
     <td style="font-weight:600;color:${r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.days}</td>
     <td><span class="chip ${r.status==='OK'?'ch-ok':'ch-late'}">${r.status}</span></td>
@@ -1667,7 +1674,7 @@ function filterImport() {
       return (va-vb)*impSortDir;
     });
   }
-  document.getElementById('impCount').textContent = currentLang==='vi'
+  const impCountEl = document.getElementById('impCount'); if(impCountEl) impCountEl.textContent = currentLang==='vi'
     ? `Hiển thị ${filtered.length} / ${importData.length} lô`
     : `Showing ${filtered.length} / ${importData.length} lots`;
 
