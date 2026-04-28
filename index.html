@@ -1094,19 +1094,20 @@ function bootApp() {
 }
 
 function renderUserInfo() {
-  // Áp dụng phân quyền
-  const editAllowed = session.canEdit === true || session.role === 'Admin';
-  window._canEdit = editAllowed;
+  // Áp dụng phân quyền từ cột Permission (ADMIN/EDIT/VIEW)
+  const perm = String(session.permission||'').trim().toUpperCase();
+  window._canEdit  = perm === 'ADMIN' || perm === 'EDIT';
+  window._isAdmin  = perm === 'ADMIN';
   // Ẩn menu Nhập liệu nếu không có quyền sửa
   const entryNav = document.getElementById('entryNav');
-  if (entryNav) entryNav.style.display = editAllowed ? '' : 'none';
+  if (entryNav) entryNav.style.display = window._canEdit ? '' : 'none';
 
   const initials = (session.fullName || session.username || 'VV').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('sbUser').innerHTML = `
     <div class="sb-user-ava">${initials}</div>
     <div><div class="sb-user-name">${session.fullName || session.username}</div>
     <div class="sb-user-role">${session.role||''}</div>
-    <div style="font-size:9px;padding:1px 6px;border-radius:99px;margin-top:3px;display:inline-block;background:${window._canEdit?'rgba(14,164,122,.25)':'rgba(255,255,255,.1)'};color:${window._canEdit?'#4ade80':'rgba(255,255,255,.5)'}">${window._canEdit?'✏️ Có quyền sửa':'👁 Chỉ xem'}</div>
+    <div style="font-size:9px;padding:1px 6px;border-radius:99px;margin-top:3px;display:inline-block;background:${window._isAdmin?'rgba(228,160,32,.3)':window._canEdit?'rgba(14,164,122,.25)':'rgba(255,255,255,.1)'};color:${window._isAdmin?'#fbbf24':window._canEdit?'#4ade80':'rgba(255,255,255,.5)'}">${window._isAdmin?'⚡ Admin':window._canEdit?'✏️ Có quyền sửa':'👁 Chỉ xem'}</div>
     <div class="sb-logout" onclick="logout()">Đăng xuất</div></div>`;
 }
 
