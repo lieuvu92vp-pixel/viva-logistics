@@ -1678,7 +1678,8 @@ function filterImport() {
     ? `Hiển thị ${filtered.length} / ${importData.length} lô`
     : `Showing ${filtered.length} / ${importData.length} lots`;
 
-  document.getElementById('impTbl').innerHTML = filtered.length ? filtered.map((r,i) => `<tr>
+  const impTblEl = document.getElementById('impTbl'); if (!impTblEl) return;
+  impTblEl.innerHTML = filtered.length ? filtered.map((r,i) => `<tr>
     <td style="color:var(--text3);font-size:11px">${i+1}</td>
     <td style="font-size:11px">${r.eta||'–'}</td>
     <td><span class="chip ch-info">${r.shipMode||'–'}</span></td>
@@ -1770,7 +1771,8 @@ function filterExport() {
     ? `Hiển thị ${filtered.length} / ${exportData.length} lô`
     : `Showing ${filtered.length} / ${exportData.length} lots`;
 
-  document.getElementById('expTbl').innerHTML = filtered.length ? filtered.map((r,i) => {
+  const expTblEl = document.getElementById('expTbl'); if (!expTblEl) return;
+  expTblEl.innerHTML = filtered.length ? filtered.map((r,i) => {
     const statusChip = r.status==='Shipped' ? '<span class="chip ch-ship">Shipped</span>'
       : r.status==='Urgent'  ? '<span class="chip" style="background:#fce8e6;color:#c5221f;font-weight:700">🔴 Urgent</span>'
       : r.status==='Overdue' ? '<span class="chip ch-late">Overdue</span>'
