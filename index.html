@@ -787,6 +787,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- LOGIN LOADING OVERLAY -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:rgba(11,35,65,0.85);z-index:99999;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+  <div style="width:52px;height:52px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:overlaySpinAnim .8s linear infinite"></div>
+  <div style="color:#fff;font-size:16px;font-weight:600;letter-spacing:.3px" id="overlayMsg">Đang xác thực...</div>
+  <div style="color:rgba(255,255,255,.45);font-size:12px">VIVA Logistics Portal</div>
+</div>
+<style>
+@keyframes overlaySpinAnim { to { transform: rotate(360deg); } }
+#loginOverlay { display: none; }
+#loginOverlay.show { display: flex !important; }
+</style>
+
 <script>
 // ══════════════════════════════════════════════════════════
 //  CẤU HÌNH — thay URL sau khi deploy Apps Script
@@ -1106,27 +1118,27 @@ async function doLogin() {
   if (!u || !p) { document.getElementById('loginErr').textContent = 'Vui lòng điền đầy đủ'; return; }
   document.getElementById('loginErr').textContent = '';
 
-  // Mờ nút + cursor loading
-  const btn = document.getElementById('loginBtnText');
-  btn.disabled = true;
-  btn.style.opacity = '0.5';
-  btn.textContent = '⏳ Đang đăng nhập...';
-  document.body.style.cursor = 'wait';
+  // Hiện overlay loading toàn màn hình
+  const overlay = document.getElementById('loginOverlay');
+  const overlayMsg = document.getElementById('overlayMsg');
+  overlay.classList.add('show');
+
+  const msgs = currentLang === 'en'
+    ? ['Authenticating...', 'Loading data...', 'Preparing...']
+    : ['Đang xác thực...', 'Đang tải dữ liệu...', 'Chuẩn bị giao diện...'];
+  let mi = 0;
+  const t = setInterval(() => { mi=(mi+1)%msgs.length; overlayMsg.textContent=msgs[mi]; }, 1000);
 
   try {
     const res = await api('login', { username: u, password: p }, 'GET', false);
-    btn.textContent = '✓ Thành công!';
-    btn.style.opacity = '1';
-    btn.style.background = '#0EA47A';
+    clearInterval(t);
+    overlayMsg.textContent = currentLang === 'en' ? '✓ Success!' : '✓ Đăng nhập thành công!';
     session = res;
     localStorage.setItem('viva_session', JSON.stringify(session));
-    setTimeout(() => bootApp(), 300);
+    setTimeout(() => { overlay.classList.remove('show'); bootApp(); }, 500);
   } catch (e) {
-    btn.disabled = false;
-    btn.style.opacity = '';
-    btn.style.background = '';
-    btn.textContent = currentLang === 'en' ? 'Sign in' : 'Đăng nhập';
-    document.body.style.cursor = '';
+    clearInterval(t);
+    overlay.classList.remove('show');
     document.getElementById('loginErr').textContent = e.message || 'Đăng nhập thất bại';
   }
 }
