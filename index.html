@@ -2373,27 +2373,27 @@ function toInputDate(val) {
 async function saveEdit() {
   try {
     if (_editType === 'import') {
+      // Validate trước khi gọi API
+      const md = document.getElementById('em_mode').value;
+      const at = document.getElementById('em_arrivaltime')?.value||'';
+      if (md === 'FCL' && !at) {
+        const el = document.getElementById('em_arrivaltime');
+        if(el){el.style.border='1.5px solid var(--red)';el.style.background='#fff0f0';el.focus();}
+        showToast('⚠️ Mode FCL bắt buộc điền Giờ về kho!','error');
+        return;
+      }
       await api('updateImport', {
-        recordId: _editId,
-        shipper  : document.getElementById('em_shipper').value,
-        eta      : document.getElementById('em_eta').value,
-        shipMode : document.getElementById('em_mode').value,
-        arrivalTime: (() => {
-          const md = document.getElementById('em_mode').value;
-          const at = document.getElementById('em_arrivaltime')?.value||'';
-          if (md === 'FCL' && !at) {
-            const el = document.getElementById('em_arrivaltime');
-            if(el){el.style.border='1.5px solid var(--red)';el.style.background='#fff0f0';el.focus();}
-            throw new Error('Mode FCL bắt buộc điền Giờ về kho!');
-          }
-          return at;
-        })(),
-        packages : document.getElementById('em_packages').value,
-        weight   : document.getElementById('em_weight').value,
-        arrival  : document.getElementById('em_arrival').value,
-        cdNo     : document.getElementById('em_cdno').value,
-        billNo   : document.getElementById('em_billno').value,
-        reasons  : document.getElementById('em_reasons').value,
+        recordId   : _editId,
+        shipper    : document.getElementById('em_shipper').value,
+        eta        : document.getElementById('em_eta').value,
+        shipMode   : md,
+        arrivalTime: at,
+        packages   : document.getElementById('em_packages').value,
+        weight     : document.getElementById('em_weight').value,
+        arrival    : document.getElementById('em_arrival').value,
+        cdNo       : document.getElementById('em_cdno').value,
+        billNo     : document.getElementById('em_billno').value,
+        reasons    : document.getElementById('em_reasons').value,
       }, 'GET');
       showToast('✓ Đã cập nhật lô nhập', 'success');
       closeEditModal();
