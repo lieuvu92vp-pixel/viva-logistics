@@ -1819,7 +1819,7 @@ function filterExport() {
       return (va-vb)*expSortDir;
     });
   }
-  document.getElementById('expCount').textContent = currentLang==='vi'
+  const expCountEl = document.getElementById('expCount'); if(expCountEl) expCountEl.textContent = currentLang==='vi'
     ? `Hiển thị ${filtered.length} / ${exportData.length} lô`
     : `Showing ${filtered.length} / ${exportData.length} lots`;
 
