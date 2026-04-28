@@ -409,8 +409,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <!-- HÀNG 3: Nhập hàng sắp tới | Xuất hàng sắp tới -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="card">
-            <div class="card-head"><div class="card-title" id="ct-recent">Lô nhập về kho gần đây</div><div class="card-link" id="lnk-recent" data-vi="Xem tất cả" data-en="View all" onclick="navTo('import',null)">Xem tất cả</div></div>
-            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent-imp"><tr><th>Shipper</th><th>Mode</th><th>Về kho</th><th>Ngày</th><th>Tiến độ</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
+            <div class="card-head"><div class="card-title" id="ct-recent">Nhập hàng sắp tới</div><div class="card-link" id="lnk-recent" data-vi="Xem tất cả" data-en="View all" onclick="navTo('import',null)">Xem tất cả</div></div>
+            <div class="tbl-wrap"><table class="tbl"><thead id="th-recent-imp"><tr><th>Shipper</th><th>Mode</th><th>ETA</th><th>Còn lại</th></tr></thead><tbody id="recentImpTbl"></tbody></table></div>
           </div>
           <div class="card">
             <div class="card-head"><div class="card-title" id="ct-upcoming">Xuất hàng sắp tới</div><div class="card-link" id="lnk-upcoming" data-vi="Xem tất cả →" data-en="View all →" onclick="navTo('upcoming',null)">Xem tất cả →</div></div>
@@ -444,8 +444,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
             <select class="fb-select" id="impStatus" onchange="filterImport()">
               <option value="">Tất cả tiến độ</option>
-              <option value="OK">Đúng tiến độ</option>
-              <option value="NOT OK">Trễ tiến độ</option>
+              <option value="Đúng tiến độ">Đúng tiến độ</option>
+              <option value="Trễ tiến độ">Trễ tiến độ</option>
             </select>
             <select class="fb-select" id="impMode" onchange="filterImport()">
               <option value="">Tất cả mode</option>
@@ -873,7 +873,7 @@ function applyLang() {
     'ct-monthly'   : {vi:'Tiến độ nhập hàng theo tháng', en:'Monthly import progress'},
     'ct-upcoming'  : {vi:'Xuất hàng sắp tới',            en:'Upcoming exports'},
     'ct-laterate'  : {vi:'% Trễ theo phương thức',        en:'Late rate by transport mode'},
-    'ct-recent'    : {vi:'Lô nhập về kho gần đây',        en:'Recent imports'},
+    'ct-recent'    : {vi:'Nhập hàng sắp tới',              en:'Upcoming imports'},
     'ct-alertbanner':{vi:'Nguyên nhân trễ — Tháng này',   en:'Late reasons — This month'},
     'ct-ontimerate': {vi:'Tỷ lệ đúng hạn theo tháng',     en:'On-time rate by month'},
     'ct-alertlist' : {vi:'Danh sách lô đang trễ — cần xử lý', en:'Late shipments — action needed'},
@@ -1368,7 +1368,7 @@ function renderAlerts(alerts) {
 
   // Lô trễ tháng này
   const lateRows = thisMonthRows
-    .filter(r => r.status === 'NOT OK')
+    .filter(r => r.status === 'Trễ tiến độ')
     .sort((a, b) => (parseDate(b.eta)||0) - (parseDate(a.eta)||0));
 
   const count = lateRows.length;
@@ -1692,15 +1692,32 @@ function renderUpcomingMini(items) {
 }
 
 function renderRecentImports() {
-  const recent = importData.filter(r => r.arrival).slice(-8).reverse();
-  if (!recent.length) return;
-  document.getElementById('recentImpTbl').innerHTML = recent.map(r => `<tr>
-    <td class="shipper" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.shipper}</td>
-    <td><span class="chip ch-info" style="font-size:10px">${r.shipMode||'–'}</span></td>
-    <td>${r.arrival}</td>
-    <td style="font-weight:600;color:${r.days>3?'var(--red)':r.days>1?'var(--amber)':'var(--teal)'}">${r.days}</td>
-    <td><span class="chip ${r.status==='OK'?'ch-ok':'ch-late'}">${r.status}</span></td>
-  </tr>`).join('');
+  const now = new Date(); now.setHours(0,0,0,0);
+  // Lô chưa về kho, ETA từ hôm nay trở đi, sắp xếp ETA tăng dần
+  const upcoming = importData
+    .filter(r => !r.arrival && r.eta)
+    .map(r => ({ ...r, _eta: new Date(r.eta.split('/').reverse().join('-')) }))
+    .filter(r => !isNaN(r._eta))
+    .sort((a, b) => a._eta - b._eta)
+    .slice(0, 8);
+
+  const el = document.getElementById('recentImpTbl');
+  if (!el) return;
+  if (!upcoming.length) {
+    el.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--text3)">Không có lô sắp về</td></tr>';
+    return;
+  }
+  el.innerHTML = upcoming.map(r => {
+    const daysUntil = Math.ceil((r._eta - now) / 86400000);
+    const etaColor = daysUntil < 0 ? 'var(--red)' : daysUntil <= 3 ? 'var(--amber)' : 'var(--teal)';
+    const etaLabel = daysUntil < 0 ? `Trễ ${Math.abs(daysUntil)} ngày` : daysUntil === 0 ? 'Hôm nay' : `${daysUntil} ngày`;
+    return `<tr>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.shipper}">${r.shipper}</td>
+      <td><span class="chip ch-info" style="font-size:10px">${r.shipMode||'–'}</span></td>
+      <td style="font-size:11px">${r.eta}</td>
+      <td style="font-weight:600;color:${etaColor};white-space:nowrap">${etaLabel}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ══ IMPORTS ══
@@ -1745,9 +1762,9 @@ function filterImport() {
     <td style="font-size:11px">${r.arrival||'–'}</td>
     <td style="font-size:11px;color:${r.shipMode==='FCL'&&!r.arrivalTime?'var(--red)':'var(--text2)'}">${r.arrivalTime||'–'}</td>
     <td style="text-align:center;font-weight:600;color:${!r.arrival?'var(--text3)':Number(r.days)>3?'var(--red)':Number(r.days)>1?'var(--amber)':'var(--teal)'}">${r.arrival?r.days:'–'}</td>
-    <td><span class="chip ${r.status==='OK'?'ch-ok':r.status==='NOT OK'?'ch-late':'ch-gray'}">${
-      r.status==='OK' ? (currentLang==='vi'?'Đúng tiến độ':'On time') :
-      r.status==='NOT OK' ? (currentLang==='vi'?'Trễ tiến độ':'Late') :
+    <td><span class="chip ${r.status==='Đúng tiến độ'?'ch-ok':r.status==='Trễ tiến độ'?'ch-late':'ch-gray'}">${
+      r.status==='Đúng tiến độ' ? (currentLang==='vi'?'Đúng tiến độ':'On time') :
+      r.status==='Trễ tiến độ' ? (currentLang==='vi'?'Trễ tiến độ':'Late') :
       r.status||'–'
     }</span></td>
     <td style="font-size:10px;color:var(--text3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reasons||''}">${r.reasons||'–'}</td>
