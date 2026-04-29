@@ -2394,15 +2394,22 @@ async function saveEdit() {
         showToast('⚠️ Mode FCL bắt buộc điền Giờ về kho!','error');
         return;
       }
+      // Convert date từ input format sang DD/MM/YYYY
+      const fmtDate = v => {
+        if (!v) return '';
+        const d = new Date(v);
+        if (isNaN(d)) return v;
+        return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+      };
       await api('updateImport', {
         recordId   : _editId,
         shipper    : document.getElementById('em_shipper').value,
-        eta        : document.getElementById('em_eta').value,
+        eta        : fmtDate(document.getElementById('em_eta').value),
         shipMode   : md,
         arrivalTime: at,
         packages   : document.getElementById('em_packages').value,
         weight     : document.getElementById('em_weight').value,
-        arrival    : document.getElementById('em_arrival').value,
+        arrival    : fmtDate(document.getElementById('em_arrival').value),
         cdNo       : document.getElementById('em_cdno').value,
         billNo     : document.getElementById('em_billno').value,
         reasons    : document.getElementById('em_reasons').value,
