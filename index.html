@@ -1215,32 +1215,44 @@ function toggleSidebar() {
 
 // ══ API ══
 async function api(action, params = {}, method = 'GET', auth = true) {
-  let url = API_URL + '?action=' + encodeURIComponent(action);
-  if (auth && session?.token) url += '&token=' + encodeURIComponent(session.token);
+  const WRITE_ACTIONS = ['updateImport','updateExport','addImport','addExport','importExcel','updateStatus','updateArrival'];
+  const usePost = WRITE_ACTIONS.includes(action);
 
-  Object.entries(params).forEach(([k, v]) => {
-    if (v === undefined || v === null) return;
-    if (typeof v === 'object') {
-      url += '&' + k + '=' + encodeURIComponent(JSON.stringify(v));
-    } else {
-      url += '&' + k + '=' + encodeURIComponent(String(v));
-    }
-  });
+  let url = API_URL, fetchOpts;
+  if (usePost) {
+    const body = { action, ...params };
+    if (auth && session?.token) body.token = session.token;
+    fetchOpts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      redirect: 'follow'
+    };
+  } else {
+    url += '?action=' + encodeURIComponent(action);
+    if (auth && session?.token) url += '&token=' + encodeURIComponent(session.token);
+    Object.entries(params).forEach(([k, v]) => {
+      if (v === undefined || v === null) return;
+      url += '&' + k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : String(v));
+    });
+    fetchOpts = { method: 'GET', redirect: 'follow' };
+  }
 
-  console.log('API call:', url.substring(0, 100));
-  const res = await fetch(url, { redirect: 'follow' });
+  console.log('API call:', action, usePost ? '(POST)' : '(GET)');
+  const res = await fetch(url, fetchOpts);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
   console.log('API response:', text.substring(0, 150));
   let json;
   try { json = JSON.parse(text); }
   catch(e) {
-    console.error('Parse error:', text.substring(0, 200));
+    console.error('Parse error:', text.substring(0, 300));
     throw new Error('Lỗi phản hồi server');
   }
   if (!json.ok) throw new Error(json.error || 'Lỗi không xác định');
   return json.data;
 }
+
 
 // ══ DASHBOARD ══
 async function loadDashboard() {
