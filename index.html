@@ -1222,10 +1222,15 @@ async function api(action, params = {}, method = 'GET', auth = true) {
   if (usePost) {
     const body = { action, ...params };
     if (auth && session?.token) body.token = session.token;
+    // Apps Script cần form-urlencoded để đọc được qua e.parameter
+    const formData = new URLSearchParams();
+    Object.entries(body).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) formData.append(k, String(v));
+    });
     fetchOpts = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
       redirect: 'follow'
     };
   } else {
