@@ -1222,12 +1222,12 @@ async function api(action, params = {}, method = 'GET', auth = true) {
   if (usePost) {
     const body = { action, ...params };
     if (auth && session?.token) body.token = session.token;
-    fetchOpts = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      redirect: 'follow'
-    };
+    // Dùng GET với URL params - Apps Script đọc qua e.parameter
+    url += '?' + Object.entries(body)
+      .filter(([,v]) => v !== undefined && v !== null)
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(String(v)))
+      .join('&');
+    fetchOpts = { method: 'GET', redirect: 'follow' };
   } else {
     url += '?action=' + encodeURIComponent(action);
     if (auth && session?.token) url += '&token=' + encodeURIComponent(session.token);
