@@ -4,52 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VIVA Logistics Portal 2026</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-// ── JSONP helper - gọi thẳng GAS bypass CORS/Cloudflare
-const GAS_DIRECT = 'https://script.google.com/macros/s/AKfycbxTcjVpzEMAwxkJzDU9FuMNeC6c9F9d1Ue4hGUwejH83WtdHQg4YY5PqQbd7wwZiP0l6g/exec';
-function callGasJsonp(action, params = {}) {
-  return new Promise((resolve, reject) => {
-    const cbName = 'gasCallback_' + Date.now();
-    const timeout = setTimeout(() => {
-      delete window[cbName];
-      script.remove();
-      reject(new Error('JSONP timeout'));
-    }, 30000);
-
-    window[cbName] = (data) => {
-      clearTimeout(timeout);
-      delete window[cbName];
-      script.remove();
-      if (data && data.ok) resolve(data.data || data);
-      else reject(new Error(data ? data.error : 'JSONP error'));
-    };
-
-    const qp = new URLSearchParams({ action, callback: cbName, ...params });
-    const script = document.createElement('script');
-    script.src = GAS_DIRECT + '?' + qp.toString();
-    script.onerror = () => {
-      clearTimeout(timeout);
-      delete window[cbName];
-      reject(new Error('JSONP script error'));
-    };
-    document.head.appendChild(script);
-  });
-}
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-/* ── RESET & BASE ── */
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#0B2341;--navy2:#162F52;--teal:#0EA47A;--teal2:#0B7A5C;
-  --red:#D94040;--amber:#E8A020;--blue:#2469B3;--blue2:#1a5298;
-  --bg:#F4F5F7;--bg2:#FFFFFF;--bg3:#F0F2F5;
-  --text:#1a1a2e;--text2:#5f6b7a;--text3:#9ba8b3;
-  --border:#DDE1E7;--border2:#c4cad4;
-  --radius:10px;--radius-sm:6px;
-  --shadow:0 1px 3px rgba(0,0,0,.08);
-}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 
 /* ── LOGIN ── */
 .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:20px}
@@ -2838,6 +2793,38 @@ function showToast(msg, type='') {
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── JSONP helper - gọi thẳng GAS bypass CORS/Cloudflare
+const GAS_DIRECT = 'https://script.google.com/macros/s/AKfycbxTcjVpzEMAwxkJzDU9FuMNeC6c9F9d1Ue4hGUwejH83WtdHQg4YY5PqQbd7wwZiP0l6g/exec';
+function callGasJsonp(action, params = {}) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'gasCallback_' + Date.now();
+    let script;
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      if (script) script.remove();
+      reject(new Error('JSONP timeout'));
+    }, 30000);
+
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script) script.remove();
+      if (data && data.ok) resolve(data.data || data);
+      else reject(new Error(data ? data.error : 'JSONP error'));
+    };
+
+    const qp = new URLSearchParams({ action, callback: cbName, ...params });
+    script = document.createElement('script');
+    script.src = GAS_DIRECT + '?' + qp.toString();
+    script.onerror = () => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      reject(new Error('JSONP script error'));
+    };
+    document.head.appendChild(script);
+  });
 }
 </script>
 </body>
