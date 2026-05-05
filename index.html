@@ -1247,7 +1247,7 @@ function toggleSidebar() {
 
 // ══ API ══
 async function api(action, params = {}, method = 'GET', auth = true) {
-  const WRITE_ACTIONS = ['updateImport','updateExport','addImport','addExport','importExcel','updateStatus','updateArrival'];
+  const WRITE_ACTIONS = ['updateImport','updateExport','importExcel','updateStatus','updateArrival'];
   const usePost = WRITE_ACTIONS.includes(action);
 
   let url = API_URL, fetchOpts;
