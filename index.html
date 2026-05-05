@@ -1068,23 +1068,35 @@ function toggleLang() {
   }
 }
 
-// ── Helper parse date từ nhiều format (DD/MM/YYYY hoặc YYYY-MM-DD)
-// BUG 10 FIX: Dùng local time constructor thay vì new Date(string) để tránh lệch múi giờ UTC+7
+// ── Helper parse date — hỗ trợ tất cả format thực tế từ Google Sheets & Excel
+// Các format được hỗ trợ: DD/MM/YYYY · DD-MM-YYYY · YYYY-MM-DD · MM/DD/YYYY (JS default)
 function parseDate(val) {
   if (!val) return null;
   if (val instanceof Date) return val;
   const s = String(val).trim();
   if (!s || s === '–' || s === '-') return null;
-  // YYYY-MM-DD → parse local time (tránh UTC offset)
+
+  // YYYY-MM-DD (ISO) → local time
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
     const [y, m, d] = s.substring(0, 10).split('-').map(Number);
     return new Date(y, m - 1, d);
   }
-  // DD/MM/YYYY → parse local time
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
-    const [dd, mm, yyyy] = s.split('/').map(Number);
+  // DD/MM/YYYY → local time
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
+    const parts = s.split('/');
+    const [dd, mm, yyyy] = parts.map(Number);
     return new Date(yyyy, mm - 1, dd);
   }
+  // DD-MM-YYYY (Google Sheets thường export dạng này) → local time
+  // Phân biệt với YYYY-MM-DD bằng cách kiểm tra phần đầu < 32
+  if (/^\d{1,2}-\d{1,2}-\d{4}/.test(s)) {
+    const parts = s.split('-');
+    const [dd, mm, yyyy] = parts.map(Number);
+    if (dd <= 31 && mm <= 12 && yyyy > 1000) {
+      return new Date(yyyy, mm - 1, dd);
+    }
+  }
+  // Fallback: để browser tự parse (MM/DD/YYYY etc.)
   const d = new Date(s);
   return isNaN(d) ? null : d;
 }
@@ -2113,24 +2125,36 @@ function switchUploadTab(tab) {
 }
 
 // BUG 11 FIX: Trả về DD/MM/YYYY thay vì YYYY-MM-DD để nhất quán với toàn bộ hệ thống.
+// formatExcelDate: chuẩn hóa mọi format ngày về DD/MM/YYYY
 function formatExcelDate(val) {
   if (!val) return '';
   let d;
   if (val instanceof Date) {
     d = val;
   } else if (typeof val === 'number') {
-    // Excel serial date → local time (tránh UTC offset gây lệch ngày)
+    // Excel serial date → local time
     const ms = (val - 25569) * 86400 * 1000;
     d = new Date(ms);
-    // Điều chỉnh về local time
     d = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
   } else {
     const s = String(val).trim();
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s; // Đã là DD/MM/YYYY
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+      // Đã là DD/MM/YYYY → chuẩn hóa padding
+      const [dd, mm, yyyy] = s.split('/').map(Number);
+      return String(dd).padStart(2,'0') + '/' + String(mm).padStart(2,'0') + '/' + yyyy;
+    }
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
+      // DD-MM-YYYY (Google Sheets export format)
+      const [dd, mm, yyyy] = s.split('-').map(Number);
+      return String(dd).padStart(2,'0') + '/' + String(mm).padStart(2,'0') + '/' + yyyy;
+    }
     if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      // YYYY-MM-DD (ISO)
       const [y, m, dv] = s.substring(0,10).split('-').map(Number);
       d = new Date(y, m - 1, dv);
-    } else { d = new Date(s); }
+    } else {
+      d = new Date(s);
+    }
   }
   if (!d || isNaN(d)) return String(val);
   return String(d.getDate()).padStart(2,'0') + '/' +
