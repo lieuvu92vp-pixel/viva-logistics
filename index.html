@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIVA Logistics Portal 2026 v2.5</title>
+<title>VIVA Logistics Portal 2026 v2.6</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -336,7 +336,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div class="sb-user" id="sbUser"></div>
-    <div class="sb-footer"><div class="live-dot"></div><span data-vi="Dữ liệu trực tiếp từ Google Sheets" data-en="Live data from Google Sheets">Dữ liệu trực tiếp từ Google Sheets</span><span style="margin-left:auto;font-size:9px;opacity:.4">v2.5</span></div>
+    <div class="sb-footer"><div class="live-dot"></div><span data-vi="Dữ liệu trực tiếp từ Google Sheets" data-en="Live data from Google Sheets">Dữ liệu trực tiếp từ Google Sheets</span><span style="margin-left:auto;font-size:9px;opacity:.4">v2.6</span></div>
   </div>
 
   <!-- Main -->
@@ -1365,9 +1365,16 @@ function renderExportKPI() {
   const in14  = new Date(today); in14.setDate(today.getDate() + 14);
   const ago7  = new Date(today); ago7.setDate(today.getDate() - 7);
 
-  // Hàm đếm lô duy nhất: dùng cột ID (cột A trong Sheet) — 1 ID = 1 lô
-  // Fallback về key 4 tiêu chí nếu row không có id (dữ liệu cũ)
-  const lotKey = r => r.id ? String(r.id) : `${r.plannedDate||r.actualDate}||${r.customer||''}||${r.country||''}||${(r.transport||'SEA').toUpperCase()}`;
+  // Hàm đếm lô duy nhất theo đúng logic nghiệp vụ:
+  // 1 lô = cùng ngày xuất + customer + country + transport
+  // Dùng key 4 tiêu chí là PRIMARY (chính xác nhất, không phụ thuộc GAS mapping)
+  const lotKey = r => {
+    const date = r.plannedDate || r.actualDate || '';
+    const cust = (r.customer || '').trim();
+    const country = (r.country || '').trim();
+    const transport = (r.transport || 'SEA').toUpperCase().trim();
+    return `${date}||${cust}||${country}||${transport}`;
+  };
   const countUniqueLots = (rows) => new Set(rows.map(lotKey)).size;
 
   // Lô xuất tuần trước (có actual_date trong 7 ngày qua)
@@ -1727,11 +1734,10 @@ function renderUpcomingMini(items) {
   const now = new Date();
   const in7 = new Date(now); in7.setDate(now.getDate() + 7);
 
-  // Nhóm theo ID lô (cột A trong Sheet) — 1 ID = 1 lô
-  // Fallback: nếu row không có id thì dùng key 4 tiêu chí
+  // Nhóm theo key 4 tiêu chí: ngày + customer + country + transport = 1 lô
   const groups = {};
   items.forEach(d => {
-    const key = d.id ? String(d.id) : `${d.plannedDate||d.actualDate}||${d.customer||''}||${d.country||''}||${(d.transport||'SEA').toUpperCase()}`;
+    const key = `${d.plannedDate||d.actualDate}||${(d.customer||'').trim()}||${(d.country||'').trim()}||${(d.transport||'SEA').toUpperCase().trim()}`;
     if (!groups[key]) groups[key] = { ...d, styles: [], totalQty: 0, pos: [] };
     if (d.style && !groups[key].styles.includes(d.style)) groups[key].styles.push(d.style);
     groups[key].totalQty += Number(d.qty) || 0;
@@ -2019,13 +2025,12 @@ function renderUpcoming() {
     .filter(r => r.customer && !r.actualDate && r.plannedDate)
     .sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
 
-  // ── Group theo ID lô (cột A) — 1 ID = 1 lô
-  // Fallback key 4 tiêu chí nếu row không có id
+  // ── Group theo key 4 tiêu chí: ngày + customer + country + transport = 1 lô
   const lots = {};
   items.forEach(d => {
-    const key = d.id ? String(d.id) : `${d.plannedDate||d.actualDate}||${d.customer||''}||${d.country||''}||${(d.transport||'SEA').toUpperCase()}`;
+    const key = `${d.plannedDate||d.actualDate}||${(d.customer||'').trim()}||${(d.country||'').trim()}||${(d.transport||'SEA').toUpperCase().trim()}`;
     if (!lots[key]) lots[key] = {
-      id: d.id, plannedDate: d.plannedDate, customer: d.customer,
+      plannedDate: d.plannedDate, customer: d.customer,
       country: d.country, transport: d.transport||'SEA',
       totalQty: 0, lines: []
     };
