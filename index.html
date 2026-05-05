@@ -2212,7 +2212,7 @@ async function submitImport() {
       showToast(`✓ Đã import ${imported} lô xuất (bỏ qua ${skipped} lỗi)`, 'success');
       pendingExportRows = [];
     } else {
-      const res = await api('importExcel', { rows: pendingImportRows }, 'POST');
+      const res = await api('importExcel', { rows: JSON.stringify(pendingImportRows) }, 'POST');
       showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
       pendingImportRows = [];
     }
