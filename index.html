@@ -1089,7 +1089,7 @@ function getDateParts(val) {
 // ══ STATE ══
 const colFilters = { imp: {}, exp: {} }; // Excel-style column filters
 let session = JSON.parse(localStorage.getItem('viva_session') || 'null');
-let importData = [], exportData = [], pendingImportRows = [];
+let importData = [], exportData = [], pendingImportRows = [], pendingExportRows = [];
 let monthChart = null;
 document.addEventListener('DOMContentLoaded', () => {
   updateDate();
@@ -1220,15 +1220,14 @@ async function api(action, params = {}, method = 'GET', auth = true) {
 
   let url = API_URL, fetchOpts;
   if (usePost) {
-    // Dùng POST với JSON body - Apps Script đọc qua doPost()
     const body = { action, ...params };
     if (auth && session?.token) body.token = session.token;
-    fetchOpts = {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    };
+    // Dùng GET với URL params - Apps Script đọc qua e.parameter
+    url += '?' + Object.entries(body)
+      .filter(([,v]) => v !== undefined && v !== null)
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(String(v)))
+      .join('&');
+    fetchOpts = { method: 'GET', redirect: 'follow' };
   } else {
     url += '?action=' + encodeURIComponent(action);
     if (auth && session?.token) url += '&token=' + encodeURIComponent(session.token);
@@ -2049,50 +2048,127 @@ async function handleFile(file) {
     const sheetName = wb.SheetNames.find(n => n !== 'Kangatang') || wb.SheetNames[wb.SheetNames.length-1];
     const ws  = wb.Sheets[sheetName];
     const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-    // Tìm hàng header (hàng có "SHIPPER")
-    let headerIdx = raw.findIndex(r => r.some(c => String(c).includes('SHIPPER') || String(c).includes('Shipper')));
+
+    // Nhận biết file nhập hay xuất dựa theo tên cột header
+    // Tìm hàng header — ưu tiên hàng có SHIPPER (nhập) hoặc CUSTOMER (xuất)
+    let headerIdx = raw.findIndex(r => r.some(c =>
+      String(c).toUpperCase().includes('SHIPPER') ||
+      String(c).toUpperCase().includes('CUSTOMER')
+    ));
     if (headerIdx === -1) headerIdx = 0;
     const headers = raw[headerIdx];
-    const rows    = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
-
-    // Map cột theo tên
     const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
-    pendingImportRows = rows.map(r => ({
-      shipper   : r[idx('SHIPPER')]    || '',
-      country   : r[idx('COUNTRY')]   || '',
-      etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
-      eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
-      vessel    : r[idx('VESSEL')]    || '',
-      cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
-      billNo    : r[idx('BILL')]      || '',
-      packages  : r[idx('PACKAGE')]   || 0,
-      weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
-      arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
-      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
-      goodsType : r[idx('GOODS')]     || '',
-      invNo     : r[idx('INV')]       || '',
-      forwarder : r[idx('FORWARD')]   || '',
-      reasons   : r[idx('REASON')]    || '',
-    })).filter(r => r.shipper);
 
-    // Show preview
-    document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô`;
-    document.getElementById('previewHead').innerHTML = '<th>Shipper</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>';
-    document.getElementById('previewBody').innerHTML = pendingImportRows.slice(0,5).map(r => `<tr>
-      <td>${r.shipper}</td><td>${r.eta}</td><td>${r.shipMode}</td>
-      <td>${r.packages}</td><td>${r.weight}</td><td>${r.arrival||'–'}</td>
-    </tr>`).join('');
-    document.getElementById('uploadPreview').style.display = 'block';
-    showToast(`Đã đọc ${pendingImportRows.length} lô — kiểm tra và bấm Import`);
+    // Phát hiện loại file
+    const isExportFile = idx('CUSTOMER') >= 0 && idx('SHIPPER') < 0;
+
+    if (isExportFile) {
+      // ── FILE HÀNG XUẤT (LOADING SCHEDULE) ──
+      // Lọc hàng có dữ liệu hợp lệ: Customer không rỗng
+      const custIdx = idx('CUSTOMER');
+      const rows = raw.slice(headerIdx + 1).filter(r => {
+        const cust = r[custIdx];
+        return cust && String(cust).trim() && String(cust).trim() !== '0';
+      });
+
+      pendingExportRows = rows.map(r => {
+        const plannedRaw = r[idx('PLANNED')];
+        const actualRaw  = r[idx('ACTUAL')];
+        const cutSIRaw   = r[idx('CUT_SI')] !== -1 ? r[idx('CUT_SI')] : r[idx('CUTSI')] !== -1 ? r[idx('CUTSI')] : '';
+        const cutCYRaw   = r[idx('CUT_CY')] !== -1 ? r[idx('CUT_CY')] : r[idx('CY')] !== -1 ? r[idx('CY')] : r[idx('CFS')] !== -1 ? r[idx('CFS')] : '';
+        const truckArrRaw = r[idx('TRUCK_ARR')] !== -1 ? r[idx('TRUCK_ARR')] : r[idx('TRUCK ARR')] !== -1 ? r[idx('TRUCK ARR')] : r[idx('ARRIVAL')] !== -1 ? r[idx('ARRIVAL')] : '';
+        const truckDepRaw = r[idx('TRUCK_DEP')] !== -1 ? r[idx('TRUCK_DEP')] : r[idx('TRUCK DEP')] !== -1 ? r[idx('TRUCK DEP')] : r[idx('DEPARTURE')] !== -1 ? r[idx('DEPARTURE')] : '';
+
+        // Lấy status — convert từ EN sang VI nếu cần
+        let status = String(r[idx('STATUS')] || '').trim();
+        if (!status || status === '0') status = '';
+        // Normalize status sang tiếng Việt
+        if (/shipped|done|complete/i.test(status))   status = 'Đã xuất';
+        else if (/overdue|late|trễ/i.test(status))  status = 'Trễ tiến độ';
+        else if (/urgent/i.test(status))             status = 'Khẩn cấp';
+        else if (/pending|waiting|chờ/i.test(status)) status = 'Chờ xuất';
+
+        return {
+          customer     : String(r[custIdx] || '').trim(),
+          country      : String(r[idx('COUNTRY')] !== -1 ? r[idx('COUNTRY')] : r[idx('EXPORT_COUNTRY')] !== -1 ? r[idx('EXPORT_COUNTRY')] : '') || '',
+          style        : String(r[idx('STYLE')] !== -1 ? r[idx('STYLE')] : r[idx('FACTORY_STYLE')] !== -1 ? r[idx('FACTORY_STYLE')] : '') || '',
+          hqCode       : String(r[idx('HQ')] || '') || '',
+          customerCode : String(r[idx('CUSTOMER_CODE')] !== -1 ? r[idx('CUSTOMER_CODE')] : r[idx('CUST')] !== -1 ? r[idx('CUST')] : '') || '',
+          po           : String(r[idx('PO')] || '') || '',
+          qty          : Number(r[idx('QTY_EXP')] !== -1 ? r[idx('QTY_EXP')] : r[idx('QTY')] !== -1 ? r[idx('QTY')] : 0) || 0,
+          qtyAct       : Number(r[idx('QTY_ACT')] || 0) || 0,
+          plannedDate  : plannedRaw ? formatExcelDate(plannedRaw) : '',
+          actualDate   : actualRaw  ? formatExcelDate(actualRaw)  : '',
+          transport    : String(r[idx('TRANSPORT')] || r[idx('MODE')] || '') || 'SEA',
+          cutSI        : cutSIRaw   ? formatExcelDate(cutSIRaw)   : '',
+          cutCY        : cutCYRaw   ? formatExcelDate(cutCYRaw)   : '',
+          truckArr     : truckArrRaw ? formatExcelDate(truckArrRaw) : '',
+          truckDep     : truckDepRaw ? formatExcelDate(truckDepRaw) : '',
+          container    : String(r[idx('CONT')] !== -1 ? r[idx('CONT')] : r[idx('CONTAINER')] !== -1 ? r[idx('CONTAINER')] : '') || '',
+          containerSeal: String(r[idx('SEAL')] || '') || '',
+          co           : String(r[idx('C/O')] !== -1 ? r[idx('C/O')] : r[idx('CO')] !== -1 ? r[idx('CO')] : '') || '',
+          status       : status,
+          remarks      : String(r[idx('REMARK')] || '') || '',
+        };
+      }).filter(r => r.customer);
+
+      pendingImportRows = []; // clear import
+      document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingExportRows.length} lô`;
+      document.getElementById('previewHead').innerHTML = '<th>Customer</th><th>Style</th><th>PO</th><th>Planned</th><th>Transport</th><th>Qty</th>';
+      document.getElementById('previewBody').innerHTML = pendingExportRows.slice(0,5).map(r => `<tr>
+        <td>${r.customer}</td><td>${r.style}</td><td>${r.po}</td>
+        <td>${r.plannedDate||'–'}</td><td>${r.transport}</td><td>${r.qty}</td>
+      </tr>`).join('');
+      document.getElementById('uploadPreview').style.display = 'block';
+      showToast(`Đã đọc ${pendingExportRows.length} lô xuất — kiểm tra và bấm Import`);
+
+    } else {
+      // ── FILE HÀNG NHẬP (IMPORT SCHEDULE) ──
+      const rows = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
+      pendingImportRows = rows.map(r => ({
+        shipper   : r[idx('SHIPPER')]    || '',
+        country   : r[idx('COUNTRY')]   || '',
+        etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
+        eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
+        vessel    : r[idx('VESSEL')]    || '',
+        cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
+        billNo    : r[idx('BILL')]      || '',
+        packages  : r[idx('PACKAGE')]   || 0,
+        weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
+        arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
+        shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
+        goodsType : r[idx('GOODS')]     || '',
+        invNo     : r[idx('INV')]       || '',
+        forwarder : r[idx('FORWARD')]   || '',
+        reasons   : r[idx('REASON')]    || '',
+      })).filter(r => r.shipper);
+
+      pendingExportRows = []; // clear export
+      document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô`;
+      document.getElementById('previewHead').innerHTML = '<th>Shipper</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>';
+      document.getElementById('previewBody').innerHTML = pendingImportRows.slice(0,5).map(r => `<tr>
+        <td>${r.shipper}</td><td>${r.eta}</td><td>${r.shipMode}</td>
+        <td>${r.packages}</td><td>${r.weight}</td><td>${r.arrival||'–'}</td>
+      </tr>`).join('');
+      document.getElementById('uploadPreview').style.display = 'block';
+      showToast(`Đã đọc ${pendingImportRows.length} lô — kiểm tra và bấm Import`);
+    }
   };
   reader.readAsArrayBuffer(file);
 }
 
 async function submitImport() {
-  if (!pendingImportRows.length) return;
+  const isExport = pendingExportRows.length > 0;
+  if (!pendingImportRows.length && !pendingExportRows.length) return;
   try {
-    const res = await api('importExcel', { rows: pendingImportRows }, 'POST');
-    showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
+    let res;
+    if (isExport) {
+      res = await api('addExport', { rows: pendingExportRows }, 'POST');
+      showToast(`✓ Đã import ${res.imported || pendingExportRows.length} lô xuất (bỏ qua ${res.skipped || 0} trùng)`, 'success');
+    } else {
+      res = await api('importExcel', { rows: pendingImportRows }, 'POST');
+      showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
+    }
     document.getElementById('uploadPreview').style.display = 'none';
     pendingImportRows = [];
     loadImports();
