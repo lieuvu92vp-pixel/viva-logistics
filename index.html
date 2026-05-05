@@ -2235,7 +2235,7 @@ async function submitImport() {
       let imported = 0, skipped = 0;
       for (const row of pendingExportRows) {
         try {
-          await api('addExport', row, 'POST');
+          await api('addExport', row, 'GET');
           imported++;
         } catch { skipped++; }
       }
@@ -2246,7 +2246,7 @@ async function submitImport() {
     }
     document.getElementById('uploadPreview').style.display = 'none';
     pendingImportRows = []; pendingExportRows = [];
-    await loadData();
+    await loadDashboard(); await loadImports(); await loadExports();
   } catch(err) {
     showToast('Lỗi import: ' + err.message, 'error');
   }
