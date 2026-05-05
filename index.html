@@ -1115,6 +1115,16 @@ function getDateParts(val) {
 const colFilters = { imp: {}, exp: {} }; // Excel-style column filters
 let session = JSON.parse(localStorage.getItem('viva_session') || 'null');
 let importData = [], exportData = [], pendingImportRows = [], pendingExportRows = [];
+function formatExcelDate(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().split('T')[0];
+  if (typeof val === 'number') {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return d.toISOString().split('T')[0];
+  }
+  return String(val);
+}
+
 let monthChart = null;
 document.addEventListener('DOMContentLoaded', () => {
   updateDate();
@@ -1712,7 +1722,7 @@ function renderUpcomingMini(items) {
   }
 
   const now = new Date();
-  const in7 = new Date(now); in7.setDate(now.getDate() + 7);
+  const in7 = new Date(now); in7.setDate(now.getDate() + 14);
 
   // Nhóm theo ngày + customer + country + transport
   const groups = {};
@@ -1727,7 +1737,7 @@ function renderUpcomingMini(items) {
   const sorted = Object.values(groups).sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
   if (document.getElementById('upcomingCount')) document.getElementById('upcomingCount').textContent = sorted.length;
 
-  el.innerHTML = sorted.slice(0,6).map(d => {
+  el.innerHTML = sorted.slice(0,10).map(d => {
     const p = getDateParts(d.plannedDate);
     const qty = d.totalQty;
     const pd = parseDate(d.plannedDate);
@@ -1973,7 +1983,7 @@ function downloadExportTable() {
 function renderUpcoming() {
   const L = t();
   const now = new Date();
-  const in7 = new Date(now); in7.setDate(now.getDate() + 7);
+  const in7 = new Date(now); in7.setDate(now.getDate() + 14);
 
   const items = exportData
     .filter(r => r.customer && !r.actualDate && r.plannedDate)
