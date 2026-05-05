@@ -1358,11 +1358,10 @@ function renderExportKPI() {
   const in14  = new Date(today); in14.setDate(today.getDate() + 14);
   const ago7  = new Date(today); ago7.setDate(today.getDate() - 7);
 
-  // Hàm đếm lô duy nhất (ngày + customer + country + transport = 1 lô)
-  const countUniqueLots = (rows) => {
-    const keys = new Set(rows.map(r => `${r.plannedDate||r.actualDate}||${r.customer}||${r.country}||${r.transport||''}`));
-    return keys.size;
-  };
+  // Hàm đếm lô duy nhất: dùng cột ID (cột A trong Sheet) — 1 ID = 1 lô
+  // Fallback về key 4 tiêu chí nếu row không có id (dữ liệu cũ)
+  const lotKey = r => r.id ? String(r.id) : `${r.plannedDate||r.actualDate}||${r.customer||''}||${r.country||''}||${(r.transport||'SEA').toUpperCase()}`;
+  const countUniqueLots = (rows) => new Set(rows.map(lotKey)).size;
 
   // Lô xuất tuần trước (có actual_date trong 7 ngày qua)
   const lastWeekRows = exportData.filter(r => {
@@ -1721,10 +1720,11 @@ function renderUpcomingMini(items) {
   const now = new Date();
   const in7 = new Date(now); in7.setDate(now.getDate() + 7);
 
-  // Nhóm theo ngày + customer + country + transport
+  // Nhóm theo ID lô (cột A trong Sheet) — 1 ID = 1 lô
+  // Fallback: nếu row không có id thì dùng key 4 tiêu chí
   const groups = {};
   items.forEach(d => {
-    const key = `${d.plannedDate}||${d.customer}||${d.country}||${d.transport||'SEA'}`;
+    const key = d.id ? String(d.id) : `${d.plannedDate||d.actualDate}||${d.customer||''}||${d.country||''}||${(d.transport||'SEA').toUpperCase()}`;
     if (!groups[key]) groups[key] = { ...d, styles: [], totalQty: 0, pos: [] };
     if (d.style && !groups[key].styles.includes(d.style)) groups[key].styles.push(d.style);
     groups[key].totalQty += Number(d.qty) || 0;
@@ -2011,12 +2011,13 @@ function renderUpcoming() {
     .filter(r => r.customer && !r.actualDate && r.plannedDate)
     .sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
 
-  // ── Group theo LÔ: ngày + brand + nước + transport
+  // ── Group theo ID lô (cột A) — 1 ID = 1 lô
+  // Fallback key 4 tiêu chí nếu row không có id
   const lots = {};
   items.forEach(d => {
-    const key = `${d.plannedDate}||${d.customer}||${d.country}||${d.transport||'SEA'}`;
+    const key = d.id ? String(d.id) : `${d.plannedDate||d.actualDate}||${d.customer||''}||${d.country||''}||${(d.transport||'SEA').toUpperCase()}`;
     if (!lots[key]) lots[key] = {
-      plannedDate: d.plannedDate, customer: d.customer,
+      id: d.id, plannedDate: d.plannedDate, customer: d.customer,
       country: d.country, transport: d.transport||'SEA',
       totalQty: 0, lines: []
     };
