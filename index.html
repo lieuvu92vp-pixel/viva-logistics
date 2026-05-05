@@ -1358,10 +1358,12 @@ function renderKPI(kpi) {
 function renderExportKPI() {
   const L = t();
   const now   = new Date();
-  const in14  = new Date(now); in14.setDate(now.getDate() + 14);
-  const ago7  = new Date(now); ago7.setDate(now.getDate() - 7);
+  // Tính từ đầu ngày hôm nay để không bỏ sót lô có plannedDate = hôm nay
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const in14  = new Date(today); in14.setDate(today.getDate() + 14);
+  const ago7  = new Date(today); ago7.setDate(today.getDate() - 7);
 
-  // Hàm đếm lô duy nhất (ngày + brand + nước = 1 lô)
+  // Hàm đếm lô duy nhất (ngày + customer + country + transport = 1 lô)
   const countUniqueLots = (rows) => {
     const keys = new Set(rows.map(r => `${r.plannedDate||r.actualDate}||${r.customer}||${r.country}||${r.transport||''}`));
     return keys.size;
@@ -1374,10 +1376,19 @@ function renderExportKPI() {
   });
   const lastWeekLots = countUniqueLots(lastWeekRows);
 
+  // Lô xuất hôm nay (plannedDate = hôm nay, chưa có actual_date)
+  const todayRows = exportData.filter(r => {
+    const pd = parseDate(r.plannedDate);
+    if (!pd) return false;
+    const pdDay = new Date(pd.getFullYear(), pd.getMonth(), pd.getDate());
+    return pdDay.getTime() === today.getTime() && !r.actualDate;
+  });
+  const todayLots = countUniqueLots(todayRows);
+
   // Lô xuất 14 ngày tới (có planned_date, chưa có actual_date)
   const next14Rows = exportData.filter(r => {
     const pd = parseDate(r.plannedDate);
-    return pd && pd >= now && pd <= in14 && !r.actualDate;
+    return pd && pd >= today && pd <= in14 && !r.actualDate;
   });
   const next14Lots = countUniqueLots(next14Rows);
 
@@ -1390,6 +1401,12 @@ function renderExportKPI() {
       <div class="kpi-value" style="color:var(--amber)">${lastWeekLots}</div>
       <div class="kpi-sub">${currentLang==='vi'?`${lastWeekRows.length} dòng dữ liệu`:`${lastWeekRows.length} line items`}</div>
       <div class="kpi-delta" style="color:var(--text3)">${currentLang==='vi'?'7 ngày qua':'Past 7 days'}</div>
+    </div>
+    <div class="kpi red" onclick="navTo('export',null)">
+      <div class="kpi-label">${currentLang==='vi'?'Xuất hôm nay':'Shipping today'}</div>
+      <div class="kpi-value" style="color:var(--red)">${todayLots}</div>
+      <div class="kpi-sub">${currentLang==='vi'?`${todayRows.length} dòng dữ liệu`:`${todayRows.length} line items`}</div>
+      <div class="kpi-delta" style="color:var(--text3)">${currentLang==='vi'?'Hôm nay':'Today'}</div>
     </div>
     <div class="kpi green" onclick="navTo('upcoming',null)">
       <div class="kpi-label">${currentLang==='vi'?'Sẽ xuất 14 ngày tới':'Upcoming 14 days'}</div>
