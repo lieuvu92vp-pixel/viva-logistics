@@ -1250,7 +1250,7 @@ function toggleSidebar() {
 
 // ══ API ══
 async function api(action, params = {}, method = 'GET', auth = true) {
-  const WRITE_ACTIONS = ['updateImport','updateExport','importExcel','updateStatus','updateArrival'];
+  const WRITE_ACTIONS = ['updateImport','updateExport','importExcel','importExcelExport','updateStatus','updateArrival'];
   const usePost = WRITE_ACTIONS.includes(action);
 
   let url = API_URL, fetchOpts;
@@ -2206,27 +2206,10 @@ async function submitImport() {
   try {
     let res;
     if (isExport) {
-      // Gửi từng lô qua JSONP - mỗi lô 1 request nhỏ tránh URL quá dài
-      let imported = 0, skipped = 0;
-      for (const row of pendingExportRows) {
-        try {
-          await new Promise((resolve, reject) => {
-            const cb = 'gc_' + Date.now();
-            const timer = setTimeout(() => { delete window[cb]; sc.remove(); reject(new Error('Timeout')); }, 15000);
-            window[cb] = (d) => { clearTimeout(timer); delete window[cb]; sc.remove(); d.ok ? resolve(d.data) : reject(new Error(d.error||'GAS error')); };
-            const sc = document.createElement('script');
-            const p = new URLSearchParams({ action:'addExport', token: session.token, data: JSON.stringify(row), callback: cb });
-            sc.src = 'https://script.google.com/macros/s/AKfycbxTcjVpzEMAwxkJzDU9FuMNeC6c9F9d1Ue4hGUwejH83WtdHQg4YY5PqQbd7wwZiP0l6g/exec?' + p.toString();
-            sc.onerror = () => { clearTimeout(timer); delete window[cb]; reject(new Error('Script error')); };
-            document.head.appendChild(sc);
-          });
-          imported++;
-        } catch(e) { console.error('Row error:', e.message); skipped++; }
-      }
-      res = { imported, skipped };
-      showToast(`✓ Đã import ${imported} lô xuất (bỏ qua ${skipped} lỗi)`, 'success');
+      res = await api('importExcelExport', { rows: pendingExportRows });
+      showToast(`✓ Đã import ${res.imported||0} lô xuất (bỏ qua ${res.skipped||0} lỗi)`, 'success');
     } else {
-      res = await api('importExcel', { rows: JSON.stringify(pendingImportRows) }, 'GET');
+      res = await api('importExcel', { rows: pendingImportRows });
       showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     }
     document.getElementById('uploadPreview').style.display = 'none';
