@@ -626,34 +626,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
             <div class="card-body">
               <div style="display:flex;gap:10px;margin-bottom:16px">
-                <button id="tab-upload-import" onclick="switchUploadTab('import')"
-                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:13px">
-                  📥 Hàng Nhập
-                </button>
-                <button id="tab-upload-export" onclick="switchUploadTab('export')"
-                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);font-weight:600;cursor:pointer;font-size:13px">
-                  📤 Hàng Xuất
-                </button>
+                <button id="tab-imp" onclick="switchUploadTab('import')"
+                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:13px">📥 Hàng Nhập</button>
+                <button id="tab-exp" onclick="switchUploadTab('export')"
+                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);font-weight:600;cursor:pointer;font-size:13px">📤 Hàng Xuất</button>
               </div>
-              <div id="upload-import-zone">
-                <div style="font-size:12px;color:var(--text3);margin-bottom:8px">File: <b>Import_schedule_2026.xlsx</b></div>
-                <div class="upload-zone" onclick="document.getElementById('fileInputImport').click()"
+              <div id="zone-import">
+                <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
                   ondragover="event.preventDefault();this.classList.add('drag')"
                   ondragleave="this.classList.remove('drag')"
-                  ondrop="event.preventDefault();handleImportFile(event.dataTransfer.files[0])">
-                  <input type="file" id="fileInputImport" accept=".xlsx,.xls" style="display:none" onchange="handleImportFile(this.files[0])">
+                  ondrop="handleDrop(event)">
+                  <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
                   <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
                   <div class="uz-title">Kéo thả file hàng nhập vào đây</div>
                   <div class="uz-sub">hoặc click để chọn file<br><small>Import_schedule_2026.xlsx</small></div>
                 </div>
               </div>
-              <div id="upload-export-zone" style="display:none">
-                <div style="font-size:12px;color:var(--text3);margin-bottom:8px">File: <b>LOADING_SCHEDULE_2026.xlsx</b></div>
-                <div class="upload-zone" onclick="document.getElementById('fileInputExport').click()"
+              <div id="zone-export" style="display:none">
+                <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Cột cần có: <b>Customer, Planned_Date, Factory_Style, PO, Transport</b></div>
+                <div class="upload-zone" onclick="document.getElementById('fileInputExp').click()"
                   ondragover="event.preventDefault();this.classList.add('drag')"
                   ondragleave="this.classList.remove('drag')"
                   ondrop="event.preventDefault();handleExportFile(event.dataTransfer.files[0])">
-                  <input type="file" id="fileInputExport" accept=".xlsx,.xls" style="display:none" onchange="handleExportFile(this.files[0])">
+                  <input type="file" id="fileInputExp" accept=".xlsx,.xls" style="display:none" onchange="handleExportFile(this.files[0])">
                   <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
                   <div class="uz-title">Kéo thả file hàng xuất vào đây</div>
                   <div class="uz-sub">hoặc click để chọn file<br><small>LOADING_SCHEDULE_2026.xlsx</small></div>
@@ -1115,16 +1110,6 @@ function getDateParts(val) {
 const colFilters = { imp: {}, exp: {} }; // Excel-style column filters
 let session = JSON.parse(localStorage.getItem('viva_session') || 'null');
 let importData = [], exportData = [], pendingImportRows = [], pendingExportRows = [];
-function formatExcelDate(val) {
-  if (!val) return '';
-  if (val instanceof Date) return val.toISOString().split('T')[0];
-  if (typeof val === 'number') {
-    const d = new Date((val - 25569) * 86400 * 1000);
-    return d.toISOString().split('T')[0];
-  }
-  return String(val);
-}
-
 let monthChart = null;
 document.addEventListener('DOMContentLoaded', () => {
   updateDate();
@@ -1250,7 +1235,7 @@ function toggleSidebar() {
 
 // ══ API ══
 async function api(action, params = {}, method = 'GET', auth = true) {
-  const WRITE_ACTIONS = ['updateImport','updateExport','importExcel','importExcelExport','updateStatus','updateArrival'];
+  const WRITE_ACTIONS = ['updateImport','updateExport','addImport','addExport','importExcel','updateStatus','updateArrival'];
   const usePost = WRITE_ACTIONS.includes(action);
 
   let url = API_URL, fetchOpts;
@@ -1722,7 +1707,7 @@ function renderUpcomingMini(items) {
   }
 
   const now = new Date();
-  const in7 = new Date(now); in7.setDate(now.getDate() + 14);
+  const in7 = new Date(now); in7.setDate(now.getDate() + 7);
 
   // Nhóm theo ngày + customer + country + transport
   const groups = {};
@@ -1737,7 +1722,7 @@ function renderUpcomingMini(items) {
   const sorted = Object.values(groups).sort((a,b) => (parseDate(a.plannedDate)||0) - (parseDate(b.plannedDate)||0));
   if (document.getElementById('upcomingCount')) document.getElementById('upcomingCount').textContent = sorted.length;
 
-  el.innerHTML = sorted.slice(0,10).map(d => {
+  el.innerHTML = sorted.slice(0,6).map(d => {
     const p = getDateParts(d.plannedDate);
     const qty = d.totalQty;
     const pd = parseDate(d.plannedDate);
@@ -1983,7 +1968,7 @@ function downloadExportTable() {
 function renderUpcoming() {
   const L = t();
   const now = new Date();
-  const in7 = new Date(now); in7.setDate(now.getDate() + 14);
+  const in7 = new Date(now); in7.setDate(now.getDate() + 7);
 
   const items = exportData
     .filter(r => r.customer && !r.actualDate && r.plannedDate)
@@ -2076,62 +2061,27 @@ function handleDrop(e) {
 }
 
 function switchUploadTab(tab) {
-  const isImport = tab === 'import';
-  document.getElementById('upload-import-zone').style.display = isImport ? 'block' : 'none';
-  document.getElementById('upload-export-zone').style.display = isImport ? 'none' : 'block';
-  const btnI = document.getElementById('tab-upload-import');
-  const btnE = document.getElementById('tab-upload-export');
-  btnI.style.background = isImport ? 'var(--blue)' : 'var(--bg2)';
-  btnI.style.color = isImport ? '#fff' : 'var(--text2)';
-  btnI.style.borderColor = isImport ? 'var(--blue)' : 'var(--border)';
-  btnE.style.background = isImport ? 'var(--bg2)' : 'var(--blue)';
-  btnE.style.color = isImport ? 'var(--text2)' : '#fff';
-  btnE.style.borderColor = isImport ? 'var(--border)' : 'var(--blue)';
+  const isImp = tab === 'import';
+  document.getElementById('zone-import').style.display = isImp ? 'block' : 'none';
+  document.getElementById('zone-export').style.display = isImp ? 'none' : 'block';
+  document.getElementById('tab-imp').style.cssText = isImp
+    ? 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:13px'
+    : 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);font-weight:600;cursor:pointer;font-size:13px';
+  document.getElementById('tab-exp').style.cssText = isImp
+    ? 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);font-weight:600;cursor:pointer;font-size:13px'
+    : 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:13px';
   document.getElementById('uploadPreview').style.display = 'none';
   pendingImportRows = []; pendingExportRows = [];
 }
 
-function handleDrop(e) { e.preventDefault(); handleImportFile(e.dataTransfer.files[0]); }
-function handleFile(file) { handleImportFile(file); }
-
-async function handleImportFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
-    const sheetName = wb.SheetNames.find(n => n !== 'Kangatang') || wb.SheetNames[wb.SheetNames.length-1];
-    const ws = wb.Sheets[sheetName];
-    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-    let headerIdx = raw.findIndex(r => r.some(c => /SHIPPER/i.test(String(c))));
-    if (headerIdx === -1) headerIdx = 0;
-    const headers = raw[headerIdx];
-    const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
-    const rows = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
-    pendingImportRows = rows.map(r => ({
-      shipper   : r[idx('SHIPPER')]  || '',
-      country   : r[idx('COUNTRY')] || '',
-      etd       : r[idx('ETD')]     ? formatExcelDate(r[idx('ETD')]) : '',
-      eta       : r[idx('ETA')]     ? formatExcelDate(r[idx('ETA')]) : '',
-      vessel    : r[idx('VESSEL')]  || '',
-      cdNo      : r[idx('CD NO')]   || r[idx('CD_NO')] || '',
-      billNo    : r[idx('BILL')]    || '',
-      packages  : Number(r[idx('PACKAGE')] || r[idx('PACKAGES')] || 0) || 0,
-      weight    : Number(r[idx('WEIGH')]   || r[idx('WEIGHT')]   || 0) || 0,
-      arrival   : r[idx('ARRIVAL')] ? formatExcelDate(r[idx('ARRIVAL')]) : '',
-      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || r[idx('MODE')] || '',
-      goodsType : r[idx('GOODS')]   || '',
-      invNo     : r[idx('INV')]     || '',
-      forwarder : r[idx('FORWARD')] || '',
-      reasons   : r[idx('REASON')]  || '',
-    })).filter(r => r.shipper);
-    pendingExportRows = [];
-    document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô nhập`;
-    document.getElementById('previewHead').innerHTML = '<th>Shipper</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>';
-    document.getElementById('previewBody').innerHTML = pendingImportRows.slice(0,5).map(r => `<tr><td>${r.shipper}</td><td>${r.eta}</td><td>${r.shipMode}</td><td>${r.packages}</td><td>${r.weight}</td><td>${r.arrival||'–'}</td></tr>`).join('');
-    document.getElementById('uploadPreview').style.display = 'block';
-    showToast(`Đã đọc ${pendingImportRows.length} lô nhập — kiểm tra và bấm Import`);
-  };
-  reader.readAsArrayBuffer(file);
+function formatExcelDate(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().split('T')[0];
+  if (typeof val === 'number') {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return d.toISOString().split('T')[0];
+  }
+  return String(val);
 }
 
 async function handleExportFile(file) {
@@ -2139,7 +2089,7 @@ async function handleExportFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
-    const sheetName = wb.SheetNames.find(n => n !== 'Kangatang') || wb.SheetNames[wb.SheetNames.length-1];
+    const sheetName = wb.SheetNames[0];
     const ws = wb.Sheets[sheetName];
     const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
     let headerIdx = raw.findIndex(r => r.some(c => /CUSTOMER/i.test(String(c))));
@@ -2148,76 +2098,138 @@ async function handleExportFile(file) {
     const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
     const iCust = idx('CUSTOMER');
     const rows = raw.slice(headerIdx + 1).filter(r => {
-      const cust = iCust >= 0 ? r[iCust] : '';
-      return cust && String(cust).trim() && !/^=/.test(String(cust));
+      const v = iCust >= 0 ? r[iCust] : '';
+      return v && String(v).trim() && !/^=/.test(String(v));
     });
     pendingExportRows = rows.map(r => {
+      const iCountry = idx('COUNTRY') >= 0 ? idx('COUNTRY') : idx('EXPORT_COUNTRY');
+      const iStyle   = idx('STYLE')   >= 0 ? idx('STYLE')   : idx('FACTORY_STYLE');
+      const iQty     = idx('QTY_EXP') >= 0 ? idx('QTY_EXP') : idx('QTY');
+      const iPlan    = idx('PLANNED');
+      const iAct     = idx('ACTUAL');
+      const iTrans   = idx('TRANSPORT') >= 0 ? idx('TRANSPORT') : idx('MODE');
+      const iCutSI   = idx('CUT_SI') >= 0 ? idx('CUT_SI') : idx('CUT SI');
+      const iCutCY   = idx('CUT_CY') >= 0 ? idx('CUT_CY') : idx('CY/CFS') >= 0 ? idx('CY/CFS') : idx('CFS');
+      const iTruckA  = idx('TRUCK_ARR') >= 0 ? idx('TRUCK_ARR') : idx('TRUCK_ARRIVAL') >= 0 ? idx('TRUCK_ARRIVAL') : idx('TRUCK ARR');
+      const iTruckD  = idx('TRUCK_DEP') >= 0 ? idx('TRUCK_DEP') : idx('TRUCK_DEPARTURE') >= 0 ? idx('TRUCK_DEPARTURE') : idx('TRUCK DEP');
+      const iCont    = idx('TRUCK-CONT') >= 0 ? idx('TRUCK-CONT') : idx('CONTAINER');
       let status = String(idx('STATUS') >= 0 ? r[idx('STATUS')] : '').trim();
       if (/shipped|done|đã xuất/i.test(status)) status = 'Đã xuất';
       else if (/overdue|late|trễ/i.test(status)) status = 'Trễ tiến độ';
       else if (/pending|waiting|chờ/i.test(status)) status = 'Chờ xuất';
       else status = '';
-      const iCountry = idx('COUNTRY') >= 0 ? idx('COUNTRY') : idx('EXPORT_COUNTRY');
-      const iStyle   = idx('STYLE')   >= 0 ? idx('STYLE')   : idx('FACTORY_STYLE');
-      const iQtyExp  = idx('QTY_EXP') >= 0 ? idx('QTY_EXP') : idx('QTY');
-      const iPlanned = idx('PLANNED');
-      const iActual  = idx('ACTUAL');
-      const iTransport = idx('TRANSPORT') >= 0 ? idx('TRANSPORT') : idx('MODE');
-      const iCutSI = idx('CUT_SI') >= 0 ? idx('CUT_SI') : idx('CUT SI');
-      const iCutCY = idx('CUT_CY') >= 0 ? idx('CUT_CY') : idx('CY/CFS') >= 0 ? idx('CY/CFS') : idx('CFS');
-      const iTruckArr = idx('TRUCK_ARR') >= 0 ? idx('TRUCK_ARR') : idx('TRUCK_ARRIVAL') >= 0 ? idx('TRUCK_ARRIVAL') : idx('TRUCK ARR');
-      const iTruckDep = idx('TRUCK_DEP') >= 0 ? idx('TRUCK_DEP') : idx('TRUCK_DEPARTURE') >= 0 ? idx('TRUCK_DEPARTURE') : idx('TRUCK DEP');
-      const iCont = idx('TRUCK-CONT') >= 0 ? idx('TRUCK-CONT') : idx('CONTAINER');
       return {
-        customer     : String(r[iCust] || '').trim(),
-        country      : String(iCountry >= 0 ? r[iCountry] : '').trim(),
-        style        : String(iStyle   >= 0 ? r[iStyle]   : '').trim(),
-        hqCode       : String(idx('HQ') >= 0 ? r[idx('HQ')] : '').trim(),
-        customerCode : String(idx('CUSTOMER_CODE') >= 0 ? r[idx('CUSTOMER_CODE')] : idx('CUST') >= 0 ? r[idx('CUST')] : '').trim(),
-        po           : String(idx('PO') >= 0 ? r[idx('PO')] : '').trim(),
-        qty          : Number(iQtyExp >= 0 ? r[iQtyExp] : 0) || 0,
-        qtyAct       : Number(idx('QTY_ACT') >= 0 ? r[idx('QTY_ACT')] : 0) || 0,
-        plannedDate  : (iPlanned >= 0 && r[iPlanned]) ? formatExcelDate(r[iPlanned]) : '',
-        actualDate   : (iActual  >= 0 && r[iActual])  ? formatExcelDate(r[iActual])  : '',
-        transport    : String(iTransport >= 0 ? r[iTransport] : 'SEA').trim() || 'SEA',
-        cutSI        : (iCutSI  >= 0 && r[iCutSI])   ? formatExcelDate(r[iCutSI])   : '',
-        cutCY        : (iCutCY  >= 0 && r[iCutCY])   ? formatExcelDate(r[iCutCY])   : '',
-        truckArrival : (iTruckArr >= 0 && r[iTruckArr]) ? formatExcelDate(r[iTruckArr]) : '',
-        truckDepart  : (iTruckDep >= 0 && r[iTruckDep]) ? formatExcelDate(r[iTruckDep]) : '',
-        container    : String(iCont >= 0 ? r[iCont] : '').trim(),
-        seal         : String(idx('SEAL') >= 0 ? r[idx('SEAL')] : '').trim(),
-        co           : String(idx('C/O') >= 0 ? r[idx('C/O')] : idx('CO') >= 0 ? r[idx('CO')] : '').trim(),
-        status, remarks: String(idx('REMARK') >= 0 ? r[idx('REMARK')] : '').trim(),
+        customer:     String(r[iCust]||'').trim(),
+        country:      String(iCountry>=0?r[iCountry]:'').trim(),
+        style:        String(iStyle>=0?r[iStyle]:'').trim(),
+        hqCode:       String(idx('HQ')>=0?r[idx('HQ')]:'').trim(),
+        customerCode: String(idx('CUSTOMER_CODE')>=0?r[idx('CUSTOMER_CODE')]:idx('CUST')>=0?r[idx('CUST')]:'').trim(),
+        po:           String(idx('PO')>=0?r[idx('PO')]:'').trim(),
+        qty:          Number(iQty>=0?r[iQty]:0)||0,
+        qtyAct:       Number(idx('QTY_ACT')>=0?r[idx('QTY_ACT')]:0)||0,
+        plannedDate:  iPlan>=0&&r[iPlan]?formatExcelDate(r[iPlan]):'',
+        actualDate:   iAct>=0&&r[iAct]?formatExcelDate(r[iAct]):'',
+        transport:    String(iTrans>=0?r[iTrans]:'SEA').trim()||'SEA',
+        cutSI:        iCutSI>=0&&r[iCutSI]?formatExcelDate(r[iCutSI]):'',
+        cutCY:        iCutCY>=0&&r[iCutCY]?formatExcelDate(r[iCutCY]):'',
+        truckArrival: iTruckA>=0&&r[iTruckA]?formatExcelDate(r[iTruckA]):'',
+        truckDepart:  iTruckD>=0&&r[iTruckD]?formatExcelDate(r[iTruckD]):'',
+        container:    String(iCont>=0?r[iCont]:'').trim(),
+        seal:         String(idx('SEAL')>=0?r[idx('SEAL')]:'').trim(),
+        co:           String(idx('C/O')>=0?r[idx('C/O')]:idx('CO')>=0?r[idx('CO')]:'').trim(),
+        status, remarks: String(idx('REMARK')>=0?r[idx('REMARK')]:'').trim(),
       };
     }).filter(r => r.customer);
     pendingImportRows = [];
     document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingExportRows.length} lô xuất`;
-    document.getElementById('previewHead').innerHTML = '<th>Customer</th><th>Country</th><th>Style</th><th>PO</th><th>Planned</th><th>Transport</th><th>Qty</th>';
-    document.getElementById('previewBody').innerHTML = pendingExportRows.slice(0,5).map(r => `<tr><td>${r.customer}</td><td>${r.country}</td><td>${r.style}</td><td>${r.po}</td><td>${r.plannedDate||'–'}</td><td>${r.transport}</td><td>${r.qty}</td></tr>`).join('');
+    document.getElementById('previewHead').innerHTML = '<th>Customer</th><th>Country</th><th>Style</th><th>PO</th><th>Planned</th><th>QTY</th>';
+    document.getElementById('previewBody').innerHTML = pendingExportRows.slice(0,5).map(r=>`<tr><td>${r.customer}</td><td>${r.country}</td><td>${r.style}</td><td>${r.po}</td><td>${r.plannedDate||'–'}</td><td>${r.qty}</td></tr>`).join('');
     document.getElementById('uploadPreview').style.display = 'block';
     showToast(`Đã đọc ${pendingExportRows.length} lô xuất — kiểm tra và bấm Import`);
   };
   reader.readAsArrayBuffer(file);
 }
 
+async function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb  = XLSX.read(e.target.result, { type:'array', cellDates:true });
+    const sheetName = wb.SheetNames.find(n => n !== 'Kangatang') || wb.SheetNames[wb.SheetNames.length-1];
+    const ws  = wb.Sheets[sheetName];
+    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    // Tìm hàng header (hàng có "SHIPPER")
+    let headerIdx = raw.findIndex(r => r.some(c => String(c).includes('SHIPPER') || String(c).includes('Shipper')));
+    if (headerIdx === -1) headerIdx = 0;
+    const headers = raw[headerIdx];
+    const rows    = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
+
+    // Map cột theo tên
+    const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
+    pendingImportRows = rows.map(r => ({
+      shipper   : r[idx('SHIPPER')]    || '',
+      country   : r[idx('COUNTRY')]   || '',
+      etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
+      eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
+      vessel    : r[idx('VESSEL')]    || '',
+      cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
+      billNo    : r[idx('BILL')]      || '',
+      packages  : r[idx('PACKAGE')]   || 0,
+      weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
+      arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
+      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
+      goodsType : r[idx('GOODS')]     || '',
+      invNo     : r[idx('INV')]       || '',
+      forwarder : r[idx('FORWARD')]   || '',
+      reasons   : r[idx('REASON')]    || '',
+    })).filter(r => r.shipper);
+
+    // Show preview
+    document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô`;
+    document.getElementById('previewHead').innerHTML = '<th>Shipper</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>';
+    document.getElementById('previewBody').innerHTML = pendingImportRows.slice(0,5).map(r => `<tr>
+      <td>${r.shipper}</td><td>${r.eta}</td><td>${r.shipMode}</td>
+      <td>${r.packages}</td><td>${r.weight}</td><td>${r.arrival||'–'}</td>
+    </tr>`).join('');
+    document.getElementById('uploadPreview').style.display = 'block';
+    showToast(`Đã đọc ${pendingImportRows.length} lô — kiểm tra và bấm Import`);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 async function submitImport() {
-  const isExport = pendingExportRows.length > 0;
   if (!pendingImportRows.length && !pendingExportRows.length) return;
   try {
-    let res;
-    if (isExport) {
-      res = await api('importExcelExport', { rows: JSON.stringify(pendingExportRows) });
-      showToast(`✓ Đã import ${res.imported||0} lô xuất (bỏ qua ${res.skipped||0} lỗi)`, 'success');
+    if (pendingExportRows.length > 0) {
+      // Gửi từng lô xuất qua addExport (GET) - cùng cơ chế với các action khác
+      let imported = 0, skipped = 0;
+      for (const row of pendingExportRows) {
+        try {
+          await api('addExport', { data: JSON.stringify(row) });
+          imported++;
+        } catch(e) { skipped++; }
+      }
+      showToast(`✓ Đã import ${imported} lô xuất (bỏ qua ${skipped} lỗi)`, 'success');
+      pendingExportRows = [];
     } else {
-      res = await api('importExcel', { rows: JSON.stringify(pendingImportRows) });
+      const res = await api('importExcel', { rows: pendingImportRows }, 'POST');
       showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
+      pendingImportRows = [];
     }
     document.getElementById('uploadPreview').style.display = 'none';
-    pendingImportRows = []; pendingExportRows = [];
-    await loadDashboard(); await loadImports(); await loadExports();
-  } catch(err) {
-    showToast('Lỗi import: ' + err.message, 'error');
+    pendingImportRows = [];
+    loadImports();
+  } catch(e) { showToast('Lỗi import: ' + e.message, 'error'); }
+}
+
+function formatExcelDate(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().split('T')[0];
+  if (typeof val === 'number') {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return d.toISOString().split('T')[0];
   }
+  return String(val);
 }
 
 // ══ FORM NHẬP MỚI ══
