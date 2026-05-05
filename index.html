@@ -2206,10 +2206,10 @@ async function submitImport() {
   try {
     let res;
     if (isExport) {
-      res = await api('importExcelExport', { rows: pendingExportRows });
+      res = await api('importExcelExport', { rows: JSON.stringify(pendingExportRows) });
       showToast(`✓ Đã import ${res.imported||0} lô xuất (bỏ qua ${res.skipped||0} lỗi)`, 'success');
     } else {
-      res = await api('importExcel', { rows: pendingImportRows });
+      res = await api('importExcel', { rows: JSON.stringify(pendingImportRows) });
       showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     }
     document.getElementById('uploadPreview').style.display = 'none';
