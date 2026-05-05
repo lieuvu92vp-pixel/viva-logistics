@@ -4,7 +4,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VIVA Logistics Portal 2026</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+// ── JSONP helper - gọi thẳng GAS bypass CORS/Cloudflare
+const GAS_DIRECT = 'https://script.google.com/macros/s/AKfycbyOHbrCns22zilUt2idLHwc3M4L5VASzQvi5xB9jP0zXjOLqj1zg5_yuXO2Q2IQ6hiWWw/exec';
+function callGasJsonp(action, params = {}) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'gasCallback_' + Date.now();
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      script.remove();
+      reject(new Error('JSONP timeout'));
+    }, 30000);
+
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      if (data && data.ok) resolve(data.data || data);
+      else reject(new Error(data ? data.error : 'JSONP error'));
+    };
+
+    const qp = new URLSearchParams({ action, callback: cbName, ...params });
+    const script = document.createElement('script');
+    script.src = GAS_DIRECT + '?' + qp.toString();
+    script.onerror = () => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      reject(new Error('JSONP script error'));
+    };
+    document.head.appendChild(script);
+  });
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 /* ── RESET & BASE ── */
@@ -2233,10 +2264,13 @@ async function submitImport() {
     if (isExport) {
       // Gửi từng lô một vì addExport nhận single object
       let imported = 0, skipped = 0;
-      // Dùng importExcelExport - cùng logic với importExcel cho hàng nhập
-      res = await api('importExcelExport', { rows: JSON.stringify(pendingExportRows) }, 'GET');
-      imported = res.imported || 0;
-      skipped  = res.skipped  || 0;
+      // Dùng JSONP để gọi thẳng GAS bypass CORS và Cloudflare block
+      const jsonpResult = await callGasJsonp('importExcelExport', {
+        rows: JSON.stringify(pendingExportRows),
+        token: session.token
+      });
+      imported = jsonpResult.imported || 0;
+      skipped  = jsonpResult.skipped  || 0;
       showToast(`✓ Đã import ${imported} lô xuất (bỏ qua ${skipped} lỗi)`, 'success');
     } else {
       res = await api('importExcel', { rows: pendingImportRows }, 'POST');
