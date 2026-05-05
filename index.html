@@ -2233,22 +2233,10 @@ async function submitImport() {
     if (isExport) {
       // Gửi từng lô một vì addExport nhận single object
       let imported = 0, skipped = 0;
-      // Gọi thẳng GAS URL cho addExport - bypass Worker vì Cloudflare bị Google block
-      const GAS_URL = 'https://script.google.com/macros/s/AKfycbyOHbrCns22zilUt2idLHwc3M4L5VASzQvi5xB9jP0zXjOLqj1zg5_yuXO2Q2IQ6hiWWw/exec';
-      for (const row of pendingExportRows) {
-        try {
-          const params = new URLSearchParams({
-            action: 'addExport',
-            token: session.token,
-            data: JSON.stringify(row)
-          });
-          const res2 = await fetch(GAS_URL + '?' + params.toString(), { method: 'GET', redirect: 'follow' });
-          const txt = await res2.text();
-          const json = JSON.parse(txt);
-          if (json.ok) imported++;
-          else { console.error('addExport error:', json.error); skipped++; }
-        } catch(e) { console.error('addExport exception:', e); skipped++; }
-      }
+      // Dùng importExcelExport - cùng logic với importExcel cho hàng nhập
+      res = await api('importExcelExport', { rows: JSON.stringify(pendingExportRows) }, 'GET');
+      imported = res.imported || 0;
+      skipped  = res.skipped  || 0;
       showToast(`✓ Đã import ${imported} lô xuất (bỏ qua ${skipped} lỗi)`, 'success');
     } else {
       res = await api('importExcel', { rows: pendingImportRows }, 'POST');
