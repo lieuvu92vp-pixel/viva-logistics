@@ -1068,35 +1068,35 @@ function toggleLang() {
   }
 }
 
-// ── Helper parse date — hỗ trợ tất cả format thực tế từ Google Sheets & Excel
-// Các format được hỗ trợ: DD/MM/YYYY · DD-MM-YYYY · YYYY-MM-DD · MM/DD/YYYY (JS default)
+// ── Helper parse date
+// GAS trả về MM/DD/YYYY (US format) — parse theo đúng format này
+// Upload Excel qua formatExcelDate() sẽ được chuẩn hóa sang MM/DD/YYYY trước khi lưu
+// Nên toàn bộ date trong hệ thống đều là MM/DD/YYYY hoặc YYYY-MM-DD (ISO)
 function parseDate(val) {
   if (!val) return null;
   if (val instanceof Date) return val;
   const s = String(val).trim();
   if (!s || s === '–' || s === '-') return null;
 
-  // YYYY-MM-DD (ISO) → local time
+  // YYYY-MM-DD (ISO) → không nhập nhằng, parse local time
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
     const [y, m, d] = s.substring(0, 10).split('-').map(Number);
     return new Date(y, m - 1, d);
   }
-  // DD/MM/YYYY → local time
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
-    const parts = s.split('/');
-    const [dd, mm, yyyy] = parts.map(Number);
+
+  // DD-MM-YYYY (dấu gạch ngang — Google Sheets display format)
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
+    const [dd, mm, yyyy] = s.split('-').map(Number);
+    if (dd <= 31 && mm <= 12 && yyyy > 1000) return new Date(yyyy, mm - 1, dd);
+  }
+
+  // MM/DD/YYYY (GAS luôn trả về format này — US locale)
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    const [mm, dd, yyyy] = s.split('/').map(Number);
     return new Date(yyyy, mm - 1, dd);
   }
-  // DD-MM-YYYY (Google Sheets thường export dạng này) → local time
-  // Phân biệt với YYYY-MM-DD bằng cách kiểm tra phần đầu < 32
-  if (/^\d{1,2}-\d{1,2}-\d{4}/.test(s)) {
-    const parts = s.split('-');
-    const [dd, mm, yyyy] = parts.map(Number);
-    if (dd <= 31 && mm <= 12 && yyyy > 1000) {
-      return new Date(yyyy, mm - 1, dd);
-    }
-  }
-  // Fallback: để browser tự parse (MM/DD/YYYY etc.)
+
+  // Fallback
   const d = new Date(s);
   return isNaN(d) ? null : d;
 }
@@ -2125,7 +2125,8 @@ function switchUploadTab(tab) {
 }
 
 // BUG 11 FIX: Trả về DD/MM/YYYY thay vì YYYY-MM-DD để nhất quán với toàn bộ hệ thống.
-// formatExcelDate: chuẩn hóa mọi format ngày về DD/MM/YYYY
+// formatExcelDate: chuẩn hóa mọi format ngày về MM/DD/YYYY
+// (nhất quán với GAS — parseDate luôn đọc slash format là MM/DD/YYYY)
 function formatExcelDate(val) {
   if (!val) return '';
   let d;
@@ -2138,27 +2139,29 @@ function formatExcelDate(val) {
     d = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
   } else {
     const s = String(val).trim();
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
-      // Đã là DD/MM/YYYY → chuẩn hóa padding
-      const [dd, mm, yyyy] = s.split('/').map(Number);
-      return String(dd).padStart(2,'0') + '/' + String(mm).padStart(2,'0') + '/' + yyyy;
-    }
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
-      // DD-MM-YYYY (Google Sheets export format)
-      const [dd, mm, yyyy] = s.split('-').map(Number);
-      return String(dd).padStart(2,'0') + '/' + String(mm).padStart(2,'0') + '/' + yyyy;
-    }
+    // YYYY-MM-DD (ISO) → parse local
     if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-      // YYYY-MM-DD (ISO)
       const [y, m, dv] = s.substring(0,10).split('-').map(Number);
       d = new Date(y, m - 1, dv);
-    } else {
-      d = new Date(s);
     }
+    // DD-MM-YYYY (gạch ngang) → parse local
+    else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
+      const [dd, mm, yyyy] = s.split('-').map(Number);
+      d = new Date(yyyy, mm - 1, dd);
+    }
+    // DD/MM/YYYY (Excel Việt Nam) → parse local
+    else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+      const [dd, mm, yyyy] = s.split('/').map(Number);
+      // Phân biệt DD/MM vs MM/DD: nếu p1 > 12 thì chắc chắn là ngày
+      if (dd > 12) d = new Date(yyyy, mm - 1, dd);   // DD/MM/YYYY
+      else         d = new Date(yyyy, dd - 1, mm);   // Assume MM/DD từ nguồn khác
+    }
+    else { d = new Date(s); }
   }
   if (!d || isNaN(d)) return String(val);
-  return String(d.getDate()).padStart(2,'0') + '/' +
-         String(d.getMonth() + 1).padStart(2,'0') + '/' + d.getFullYear();
+  // Trả về MM/DD/YYYY để nhất quán với GAS
+  return String(d.getMonth() + 1).padStart(2,'0') + '/' +
+         String(d.getDate()).padStart(2,'0') + '/' + d.getFullYear();
 }
 
 async function handleExportFile(file) {
@@ -2578,15 +2581,18 @@ function closeEditModal() {
   document.getElementById('editModal').style.display = 'none';
 }
 
-// IMPROVEMENT: toInputDate — chuyển DD/MM/YYYY hoặc bất kỳ format nào sang YYYY-MM-DD cho <input type="date">
+// toInputDate: chuyển MM/DD/YYYY (GAS format) sang YYYY-MM-DD cho <input type="date">
 function toInputDate(val) {
   if (!val) return '';
   const s = String(val).trim();
   // Đã là YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // DD/MM/YYYY → YYYY-MM-DD
-  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  // MM/DD/YYYY (GAS) → YYYY-MM-DD
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  // DD-MM-YYYY (gạch ngang) → YYYY-MM-DD
+  const m2 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (m2) return `${m2[3]}-${m2[2].padStart(2,'0')}-${m2[1].padStart(2,'0')}`;
   return s;
 }
 
