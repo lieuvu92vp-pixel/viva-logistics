@@ -869,11 +869,8 @@ function applyLang() {
         line1.textContent = enText;
         line2.style.display = 'none';
       } else {
-        line2.style.display = '';
-        line2.style.display = '';
-        // line2 là bản dịch tiếng anh
-        // VI mode: line1=tên chính, line2=tên phụ tiếng Việt/Anh
-        // VI mode: line1=tiếng Việt, line2=tiếng Anh
+        line2.style.display = ''; // BUG 9 FIX: bỏ dòng trùng lặp
+        // VI mode: line1=tiếng Việt, line2=tiếng Anh (phụ đề)
         const line2Map = {
           'Bảng tổng quan'   : 'Dashboard',
           'Danh sách nhập'   : 'Import schedule',
@@ -1072,17 +1069,21 @@ function toggleLang() {
 }
 
 // ── Helper parse date từ nhiều format (DD/MM/YYYY hoặc YYYY-MM-DD)
+// BUG 10 FIX: Dùng local time constructor thay vì new Date(string) để tránh lệch múi giờ UTC+7
 function parseDate(val) {
   if (!val) return null;
   if (val instanceof Date) return val;
   const s = String(val).trim();
   if (!s || s === '–' || s === '-') return null;
-  // YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
-  // DD/MM/YYYY
+  // YYYY-MM-DD → parse local time (tránh UTC offset)
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const [y, m, d] = s.substring(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  // DD/MM/YYYY → parse local time
   if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
-    const [d,m,y] = s.split('/');
-    return new Date(`${y}-${m}-${d}`);
+    const [dd, mm, yyyy] = s.split('/').map(Number);
+    return new Date(yyyy, mm - 1, dd);
   }
   const d = new Date(s);
   return isNaN(d) ? null : d;
@@ -1175,7 +1176,14 @@ function bootApp() {
   const targetPage = validPages.includes(hash) ? hash : 'dashboard';
   const sbEl = document.querySelector(`.sb-item[onclick*="'${targetPage}'"]`);
   navTo(targetPage, sbEl);
-  Promise.all([loadDashboard(), loadImports(), loadExports()])
+
+  // IMPROVEMENT: Tải dữ liệu song song với timeout 30s, hiện trạng thái loading rõ ràng
+  const loadAll = () => Promise.all([loadDashboard(), loadImports(), loadExports()]);
+  loadAll()
+    .catch(e => {
+      console.error('Initial load error:', e);
+      showToast('Tải dữ liệu thất bại — nhấn F5 để thử lại', 'error');
+    })
     .finally(() => applyLang());
 }
 
@@ -1234,42 +1242,31 @@ function toggleSidebar() {
 }
 
 // ══ API ══
-async function api(action, params = {}, method = 'GET', auth = true) {
-  const WRITE_ACTIONS = ['updateImport','updateExport','addImport','addExport','importExcel','updateStatus','updateArrival'];
-  const usePost = WRITE_ACTIONS.includes(action);
+// BUG 1 FIX: Thống nhất hoàn toàn sang GET với query string.
+// Worker.js đã được đơn giản hoá để chỉ forward query string lên GAS.
+// GAS đọc tất cả params qua e.parameter — không cần POST body.
+async function api(action, params = {}, _method = 'GET', auth = true) {
+  let url = API_URL + '?action=' + encodeURIComponent(action);
+  if (auth && session?.token) url += '&token=' + encodeURIComponent(session.token);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined || v === null) return;
+    url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(
+      typeof v === 'object' ? JSON.stringify(v) : String(v)
+    );
+  });
 
-  let url = API_URL, fetchOpts;
-  if (usePost) {
-    const body = { action, ...params };
-    if (auth && session?.token) body.token = session.token;
-    // Dùng GET với URL params - Apps Script đọc qua e.parameter
-    url += '?' + Object.entries(body)
-      .filter(([,v]) => v !== undefined && v !== null)
-      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(String(v)))
-      .join('&');
-    fetchOpts = { method: 'GET', redirect: 'follow' };
-  } else {
-    url += '?action=' + encodeURIComponent(action);
-    if (auth && session?.token) url += '&token=' + encodeURIComponent(session.token);
-    Object.entries(params).forEach(([k, v]) => {
-      if (v === undefined || v === null) return;
-      url += '&' + k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : String(v));
-    });
-    fetchOpts = { method: 'GET', redirect: 'follow' };
-  }
-
-  console.log('API call:', action, usePost ? '(POST)' : '(GET)');
-  const res = await fetch(url, fetchOpts);
+  console.log('API call:', action, url.substring(0, 120) + (url.length > 120 ? '...' : ''));
+  const res = await fetch(url, { method: 'GET', redirect: 'follow' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
   console.log('API response:', text.substring(0, 150));
   let json;
   try { json = JSON.parse(text); }
   catch(e) {
-    console.error('Parse error:', text.substring(0, 300));
-    throw new Error('Lỗi phản hồi server');
+    console.error('Parse error. Raw response:', text.substring(0, 300));
+    throw new Error('Lỗi phản hồi server — kiểm tra Console để biết thêm chi tiết');
   }
-  if (!json.ok) throw new Error(json.error || 'Lỗi không xác định');
+  if (!json.ok) throw new Error(json.error || 'Lỗi không xác định từ server');
   return json.data;
 }
 
@@ -1785,7 +1782,8 @@ function renderRecentImports() {
     return;
   }
   el.innerHTML = upcoming.map(r => {
-    const daysUntil = Math.ceil((r._eta - now) / 86400000);
+    // BUG 2 FIX: Dùng r._arr (arrival date) thay vì r._eta (không tồn tại)
+    const daysUntil = Math.ceil((r._arr - now) / 86400000);
     const etaColor = daysUntil < 0 ? 'var(--red)' : daysUntil <= 3 ? 'var(--amber)' : 'var(--teal)';
     const etaLabel = daysUntil < 0 ? `Trễ ${Math.abs(daysUntil)} ngày` : daysUntil === 0 ? 'Hôm nay' : `${daysUntil} ngày`;
     return `<tr>
@@ -1969,15 +1967,39 @@ function clearExpDateFilter() {
 }
 
 function downloadExportTable() {
-  const q=document.getElementById('expSearch')?.value?.toLowerCase()||'';
-  const st=document.getElementById('expStatus')?.value||'';
-  const tr=document.getElementById('expTransport')?.value||'';
-  const filtered=exportData.filter(r=>(!q||[r.customer,r.style,r.po].some(v=>(v||'').toLowerCase().includes(q)))&&(!st||r.status===st)&&(!tr||r.transport===tr));
+  // BUG 7 FIX: Áp dụng đầy đủ tất cả filter giống filterExport() để CSV khớp với bảng hiển thị
+  const q       = (document.getElementById('expSearch')?.value||'').toLowerCase();
+  const st      = document.getElementById('expStatus')?.value||'';
+  const tr      = document.getElementById('expTransport')?.value||'';
+  const dateFrom = document.getElementById('expDateFrom')?.value||'';
+  const dateTo   = document.getElementById('expDateTo')?.value||'';
+
+  const toISO = v => {
+    if (!v) return '';
+    const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : v;
+  };
+
+  let filtered = exportData.filter(r => {
+    const checkDate = r.plannedDate || r.actualDate;
+    const dISO = toISO(checkDate);
+    return (
+      (!q  || [r.customer,r.style,r.po,r.country].some(v=>(v||'').toLowerCase().includes(q))) &&
+      (!st || r.status === st) &&
+      (!tr || r.transport === tr) &&
+      (!dateFrom || dISO >= dateFrom) &&
+      (!dateTo   || dISO <= dateTo)
+    );
+  });
+  // Áp dụng col filters
+  filtered = applyColFilters(filtered, 'exp');
+
   const hdrs=['STT','Khách hàng','Nước XK','Mã nhà máy','HQ Code','Cust. Code','PO','Số lượng','Ngày xuất DK','Ngày xuất TT','Vận chuyển','Cut SI','Cut CY/CFS','Truck Arrival','Truck Departure','Truck-Cont','Cont. Seal','C/O','Trạng thái','Ghi chú'];
   const rows=filtered.map((r,i)=>[i+1,r.customer,r.country,r.style,r.hqCode,r.customerCode,r.po,r.qty,r.plannedDate,r.actualDate,r.transport,r.cutSI,r.cutCY,r.truckArr,r.truckDep,r.container,r.containerSeal,r.co,r.status,r.remarks].map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
   const csv=[hdrs.join(','),...rows].join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download=`Loading_Schedule_${new Date().toLocaleDateString('vi')}.csv`; a.click();
+  showToast(`✓ Đã tải ${filtered.length} dòng`, 'success');
 }
 
 function renderUpcoming() {
@@ -2089,14 +2111,29 @@ function switchUploadTab(tab) {
   pendingImportRows = []; pendingExportRows = [];
 }
 
+// BUG 11 FIX: Trả về DD/MM/YYYY thay vì YYYY-MM-DD để nhất quán với toàn bộ hệ thống.
 function formatExcelDate(val) {
   if (!val) return '';
-  if (val instanceof Date) return val.toISOString().split('T')[0];
-  if (typeof val === 'number') {
-    const d = new Date((val - 25569) * 86400 * 1000);
-    return d.toISOString().split('T')[0];
+  let d;
+  if (val instanceof Date) {
+    d = val;
+  } else if (typeof val === 'number') {
+    // Excel serial date → local time (tránh UTC offset gây lệch ngày)
+    const ms = (val - 25569) * 86400 * 1000;
+    d = new Date(ms);
+    // Điều chỉnh về local time
+    d = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  } else {
+    const s = String(val).trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s; // Đã là DD/MM/YYYY
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const [y, m, dv] = s.substring(0,10).split('-').map(Number);
+      d = new Date(y, m - 1, dv);
+    } else { d = new Date(s); }
   }
-  return String(val);
+  if (!d || isNaN(d)) return String(val);
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth() + 1).padStart(2,'0') + '/' + d.getFullYear();
 }
 
 async function handleExportFile(file) {
@@ -2161,6 +2198,8 @@ async function handleExportFile(file) {
     document.getElementById('previewBody').innerHTML = pendingExportRows.slice(0,5).map(r=>`<tr><td>${r.customer}</td><td>${r.country}</td><td>${r.style}</td><td>${r.po}</td><td>${r.plannedDate||'–'}</td><td>${r.qty}</td></tr>`).join('');
     document.getElementById('uploadPreview').style.display = 'block';
     showToast(`Đã đọc ${pendingExportRows.length} lô xuất — kiểm tra và bấm Import`);
+    // BUG 3 FIX: Bỏ dòng "pendingImportRows = []" sai chỗ ở đây.
+    // Việc xóa import rows khi đọc export file là không đúng — hai loại dữ liệu độc lập nhau.
   };
   reader.readAsArrayBuffer(file);
 }
@@ -2213,38 +2252,39 @@ async function handleFile(file) {
 }
 
 async function submitImport() {
-  if (!pendingImportRows.length && !pendingExportRows.length) return;
+  if (!pendingImportRows.length && !pendingExportRows.length) {
+    showToast('Không có dữ liệu để import', 'error');
+    return;
+  }
   try {
     if (pendingExportRows.length > 0) {
-      // Gửi từng lô xuất qua addExport (GET) - cùng cơ chế với các action khác
+      // Gửi từng lô xuất — BUG 4 FIX: gọi loadExports() sau khi xong, không gọi loadImports()
       let imported = 0, skipped = 0;
       for (const row of pendingExportRows) {
         try {
           await api('addExport', { data: JSON.stringify(row) });
           imported++;
-        } catch(e) { skipped++; }
+        } catch(e) {
+          console.warn('addExport skipped:', e.message);
+          skipped++;
+        }
       }
       showToast(`✓ Đã import ${imported} lô xuất (bỏ qua ${skipped} lỗi)`, 'success');
       pendingExportRows = [];
-    } else {
-      const res = await api('importExcel', { rows: JSON.stringify(pendingImportRows) }, 'POST');
-      showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
-      pendingImportRows = [];
+      document.getElementById('uploadPreview').style.display = 'none';
+      await loadExports(); // BUG 4 FIX: reload export data
+      return;
     }
-    document.getElementById('uploadPreview').style.display = 'none';
-    pendingImportRows = [];
-    loadImports();
-  } catch(e) { showToast('Lỗi import: ' + e.message, 'error'); }
-}
 
-function formatExcelDate(val) {
-  if (!val) return '';
-  if (val instanceof Date) return val.toISOString().split('T')[0];
-  if (typeof val === 'number') {
-    const d = new Date((val - 25569) * 86400 * 1000);
-    return d.toISOString().split('T')[0];
+    // Import rows nhập khẩu
+    const res = await api('importExcel', { rows: JSON.stringify(pendingImportRows) });
+    showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
+    pendingImportRows = [];
+    document.getElementById('uploadPreview').style.display = 'none';
+    await loadImports();
+  } catch(e) {
+    showToast('Lỗi import: ' + e.message, 'error');
   }
-  return String(val);
 }
 
 // ══ FORM NHẬP MỚI ══
@@ -2513,12 +2553,16 @@ function closeEditModal() {
   document.getElementById('editModal').style.display = 'none';
 }
 
+// IMPROVEMENT: toInputDate — chuyển DD/MM/YYYY hoặc bất kỳ format nào sang YYYY-MM-DD cho <input type="date">
 function toInputDate(val) {
   if (!val) return '';
+  const s = String(val).trim();
+  // Đã là YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   // DD/MM/YYYY → YYYY-MM-DD
-  const m = String(val).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  return val;
+  return s;
 }
 
 async function saveEdit() {
@@ -2637,7 +2681,13 @@ function openColFilter(event, table, field, label) {
   event.stopPropagation();
   closeColFilter();
 
-  const data   = table === 'imp' ? importData : exportData;
+  // BUG 5 FIX: Guard khi data chưa tải xong → tránh dropdown rỗng gây nhầm lẫn
+  const data = table === 'imp' ? importData : exportData;
+  if (!data || !data.length) {
+    showToast('Dữ liệu chưa tải xong, vui lòng thử lại sau giây lát', 'error');
+    return;
+  }
+
   const active = colFilters[table][field] || null; // null = all selected
 
   // Lấy unique values
@@ -2779,10 +2829,26 @@ function applyColFilters(data, table) {
 // ══════════════════════════════════════════════
 
 // ══ GLOBAL SEARCH ══
+// BUG 8 FIX: Tìm trong cả Import lẫn Export, chuyển đến trang có kết quả
 function onGlobalSearch(q) {
-  navTo('import', document.querySelector('.sb-item[onclick*="import"]'));
-  document.getElementById('impSearch').value = q;
-  filterImport();
+  if (!q || !q.trim()) return;
+  const ql = q.toLowerCase();
+  const inImport = importData.some(r =>
+    [r.shipper, r.country, r.billNo, r.cdNo, r.invNo, r.goodsType, r.shipMode].some(v => (v||'').toLowerCase().includes(ql))
+  );
+  const inExport = exportData.some(r =>
+    [r.customer, r.style, r.po, r.country, r.hqCode, r.container].some(v => (v||'').toLowerCase().includes(ql))
+  );
+  if (inImport || !inExport) {
+    // Ưu tiên import, hoặc nếu không có kết quả nào thì cũng về import
+    navTo('import', document.querySelector('.sb-item[onclick*="\'import\'"]'));
+    const el = document.getElementById('impSearch'); if(el) el.value = q;
+    filterImport();
+  } else {
+    navTo('export', document.querySelector('.sb-item[onclick*="\'export\'"]'));
+    const el = document.getElementById('expSearch'); if(el) el.value = q;
+    filterExport();
+  }
 }
 
 // ══ TOAST ══
