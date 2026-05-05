@@ -622,19 +622,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div class="card">
             <div class="card-head">
               <div class="card-title">Upload file Excel</div>
-              <div class="card-sub">Giữ nguyên thói quen hiện tại</div>
+              <div class="card-sub">Chọn loại file để upload</div>
             </div>
             <div class="card-body">
-              <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
-                ondragover="event.preventDefault();this.classList.add('drag')"
-                ondragleave="this.classList.remove('drag')"
-                ondrop="handleDrop(event)">
-                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
-                <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
-                <div class="uz-title">Kéo thả file .xlsx vào đây</div>
-                <div class="uz-sub">hoặc click để chọn file<br><small>Import_schedule_2026.xlsx · LOADING_SCHEDULE_2026.xlsx</small></div>
+              <!-- Tab chọn loại upload -->
+              <div style="display:flex;gap:10px;margin-bottom:16px">
+                <button id="tab-upload-import" onclick="switchUploadTab('import')"
+                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:13px">
+                  📥 Hàng Nhập
+                </button>
+                <button id="tab-upload-export" onclick="switchUploadTab('export')"
+                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);font-weight:600;cursor:pointer;font-size:13px">
+                  📤 Hàng Xuất
+                </button>
               </div>
-              <div id="uploadPreview" style="display:none" class="upload-preview">
+
+              <!-- Upload Hàng Nhập -->
+              <div id="upload-import-zone">
+                <div style="font-size:12px;color:var(--text3);margin-bottom:8px">File: <b>Import_schedule_2026.xlsx</b> — Cột cần có: Shipper, ETA, Country, Ship_Mode...</div>
+                <div class="upload-zone" onclick="document.getElementById('fileInputImport').click()"
+                  ondragover="event.preventDefault();this.classList.add('drag')"
+                  ondragleave="this.classList.remove('drag')"
+                  ondrop="handleDropImport(event)">
+                  <input type="file" id="fileInputImport" accept=".xlsx,.xls" style="display:none" onchange="handleImportFile(this.files[0])">
+                  <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
+                  <div class="uz-title">Kéo thả file hàng nhập vào đây</div>
+                  <div class="uz-sub">hoặc click để chọn file<br><small>Import_schedule_2026.xlsx</small></div>
+                </div>
+              </div>
+
+              <!-- Upload Hàng Xuất -->
+              <div id="upload-export-zone" style="display:none">
+                <div style="font-size:12px;color:var(--text3);margin-bottom:8px">File: <b>LOADING_SCHEDULE_2026.xlsx</b> — Cột cần có: Customer, Planned_Date, Style, PO, Transport...</div>
+                <div class="upload-zone" onclick="document.getElementById('fileInputExport').click()"
+                  ondragover="event.preventDefault();this.classList.add('drag')"
+                  ondragleave="this.classList.remove('drag')"
+                  ondrop="handleDropExport(event)">
+                  <input type="file" id="fileInputExport" accept=".xlsx,.xls" style="display:none" onchange="handleExportFile(this.files[0])">
+                  <div class="uz-icon"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><path d="M8 1v10M4 7l4-4 4 4"/><rect x="2" y="12" width="12" height="3" rx="1"/></svg></div>
+                  <div class="uz-title">Kéo thả file hàng xuất vào đây</div>
+                  <div class="uz-sub">hoặc click để chọn file<br><small>LOADING_SCHEDULE_2026.xlsx</small></div>
+                </div>
+              </div>
+
+              <!-- Preview chung -->
+              <div id="uploadPreview" style="display:none;margin-top:14px" class="upload-preview">
                 <div class="up-head">
                   <span id="previewTitle">Preview</span>
                   <button class="btn-success" onclick="submitImport()" style="padding:5px 14px;font-size:12px">Import →</button>
@@ -1089,7 +1121,7 @@ function getDateParts(val) {
 // ══ STATE ══
 const colFilters = { imp: {}, exp: {} }; // Excel-style column filters
 let session = JSON.parse(localStorage.getItem('viva_session') || 'null');
-let importData = [], exportData = [], pendingImportRows = [], pendingExportRows = [];
+let importData = [], exportData = [], pendingImportRows = [];
 let monthChart = null;
 document.addEventListener('DOMContentLoaded', () => {
   updateDate();
@@ -2040,7 +2072,31 @@ function handleDrop(e) {
   if (file) handleFile(file);
 }
 
-async function handleFile(file) {
+// ── Upload tab switch
+function switchUploadTab(tab) {
+  const isImport = tab === 'import';
+  document.getElementById('upload-import-zone').style.display = isImport ? 'block' : 'none';
+  document.getElementById('upload-export-zone').style.display = isImport ? 'none' : 'block';
+  document.getElementById('tab-upload-import').style.cssText = isImport
+    ? 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:13px'
+    : 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);font-weight:600;cursor:pointer;font-size:13px';
+  document.getElementById('tab-upload-export').style.cssText = isImport
+    ? 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);font-weight:600;cursor:pointer;font-size:13px'
+    : 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:13px';
+  document.getElementById('uploadPreview').style.display = 'none';
+  pendingImportRows = []; pendingExportRows = [];
+}
+
+// ── Drag drop handlers
+function handleDrop(e) { e.preventDefault(); handleImportFile(e.dataTransfer.files[0]); }
+function handleDropImport(e) { e.preventDefault(); handleImportFile(e.dataTransfer.files[0]); }
+function handleDropExport(e) { e.preventDefault(); handleExportFile(e.dataTransfer.files[0]); }
+
+// ── Backward compat
+function handleFile(file) { handleImportFile(file); }
+
+// ── Parse HÀNG NHẬP
+async function handleImportFile(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
@@ -2048,111 +2104,123 @@ async function handleFile(file) {
     const sheetName = wb.SheetNames.find(n => n !== 'Kangatang') || wb.SheetNames[wb.SheetNames.length-1];
     const ws  = wb.Sheets[sheetName];
     const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    let headerIdx = raw.findIndex(r => r.some(c => /SHIPPER/i.test(String(c))));
+    if (headerIdx === -1) headerIdx = 0;
+    const headers = raw[headerIdx];
+    const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
+    const rows = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
+    pendingImportRows = rows.map(r => ({
+      shipper   : r[idx('SHIPPER')]    || '',
+      country   : r[idx('COUNTRY')]   || '',
+      etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
+      eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
+      vessel    : r[idx('VESSEL')]    || '',
+      cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || r[idx('CDNO')] || '',
+      billNo    : r[idx('BILL')]      || '',
+      packages  : Number(r[idx('PACKAGE')] || r[idx('PACKAGES')] || 0) || 0,
+      weight    : Number(r[idx('WEIGH')]   || r[idx('WEIGHT')]   || 0) || 0,
+      arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
+      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || r[idx('MODE')] || '',
+      goodsType : r[idx('GOODS')]     || '',
+      invNo     : r[idx('INV')]       || '',
+      forwarder : r[idx('FORWARD')]   || '',
+      reasons   : r[idx('REASON')]    || '',
+    })).filter(r => r.shipper);
+    pendingExportRows = [];
+    document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô nhập`;
+    document.getElementById('previewHead').innerHTML = '<th>Shipper</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>';
+    document.getElementById('previewBody').innerHTML = pendingImportRows.slice(0,5).map(r => `<tr>
+      <td>${r.shipper}</td><td>${r.eta}</td><td>${r.shipMode}</td>
+      <td>${r.packages}</td><td>${r.weight}</td><td>${r.arrival||'–'}</td>
+    </tr>`).join('');
+    document.getElementById('uploadPreview').style.display = 'block';
+    showToast(`Đã đọc ${pendingImportRows.length} lô nhập — kiểm tra và bấm Import`);
+  };
+  reader.readAsArrayBuffer(file);
+}
 
-    // Nhận biết file nhập hay xuất dựa theo tên cột header
-    // Tìm hàng header — ưu tiên hàng có SHIPPER (nhập) hoặc CUSTOMER (xuất)
-    let headerIdx = raw.findIndex(r => r.some(c =>
-      String(c).toUpperCase().includes('SHIPPER') ||
-      String(c).toUpperCase().includes('CUSTOMER')
-    ));
+// ── Parse HÀNG XUẤT (LOADING SCHEDULE)
+async function handleExportFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb  = XLSX.read(e.target.result, { type:'array', cellDates:true });
+    const sheetName = wb.SheetNames.find(n => n !== 'Kangatang') || wb.SheetNames[wb.SheetNames.length-1];
+    const ws  = wb.Sheets[sheetName];
+    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    // Tìm header row có CUSTOMER
+    let headerIdx = raw.findIndex(r => r.some(c => /CUSTOMER/i.test(String(c))));
     if (headerIdx === -1) headerIdx = 0;
     const headers = raw[headerIdx];
     const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
 
-    // Phát hiện loại file
-    const isExportFile = idx('CUSTOMER') >= 0 && idx('SHIPPER') < 0;
+    // Lấy index từng cột theo tên thực trong file
+    const iCust    = idx('CUSTOMER');
+    const iCountry = idx('COUNTRY') >= 0 ? idx('COUNTRY') : idx('EXPORT_COUNTRY');
+    const iStyle   = idx('STYLE') >= 0   ? idx('STYLE')   : idx('FACTORY_STYLE');
+    const iHQ      = idx('HQ');
+    const iCustCode= idx('CUSTOMER_CODE') >= 0 ? idx('CUSTOMER_CODE') : idx('CUST. CODE');
+    const iPO      = idx('PO');
+    const iQtyExp  = idx('QTY_EXP') >= 0  ? idx('QTY_EXP')  : idx('QTY');
+    const iQtyAct  = idx('QTY_ACT') >= 0  ? idx('QTY_ACT')  : -1;
+    const iPlanned = idx('PLANNED');
+    const iActual  = idx('ACTUAL');
+    const iTransport = idx('TRANSPORT') >= 0 ? idx('TRANSPORT') : idx('MODE');
+    const iCutSI   = idx('CUT_SI') >= 0  ? idx('CUT_SI')  : idx('CUT SI');
+    const iCutCY   = idx('CUT_CY') >= 0  ? idx('CUT_CY')  : idx('CY/CFS') >= 0 ? idx('CY/CFS') : idx('CFS');
+    const iTruckArr= idx('TRUCK_ARR') >= 0 ? idx('TRUCK_ARR') : idx('TRUCK_ARRIVAL') >= 0 ? idx('TRUCK_ARRIVAL') : idx('TRUCK ARR');
+    const iTruckDep= idx('TRUCK_DEP') >= 0 ? idx('TRUCK_DEP') : idx('TRUCK_DEPARTURE') >= 0 ? idx('TRUCK_DEPARTURE') : idx('TRUCK DEP');
+    const iCont    = idx('TRUCK-CONT') >= 0 ? idx('TRUCK-CONT') : idx('CONTAINER');
+    const iSeal    = idx('SEAL');
+    const iCO      = idx('C/O') >= 0 ? idx('C/O') : idx('CO');
+    const iStatus  = idx('STATUS');
+    const iRemarks = idx('REMARK');
 
-    if (isExportFile) {
-      // ── FILE HÀNG XUẤT (LOADING SCHEDULE) ──
-      // Lọc hàng có dữ liệu hợp lệ: Customer không rỗng
-      const custIdx = idx('CUSTOMER');
-      const rows = raw.slice(headerIdx + 1).filter(r => {
-        const cust = r[custIdx];
-        return cust && String(cust).trim() && String(cust).trim() !== '0';
-      });
+    const rows = raw.slice(headerIdx + 1).filter(r => {
+      const cust = iCust >= 0 ? r[iCust] : '';
+      return cust && String(cust).trim() && !/^=/.test(String(cust));
+    });
 
-      pendingExportRows = rows.map(r => {
-        const plannedRaw = r[idx('PLANNED')];
-        const actualRaw  = r[idx('ACTUAL')];
-        const cutSIRaw   = r[idx('CUT_SI')] !== -1 ? r[idx('CUT_SI')] : r[idx('CUTSI')] !== -1 ? r[idx('CUTSI')] : '';
-        const cutCYRaw   = r[idx('CUT_CY')] !== -1 ? r[idx('CUT_CY')] : r[idx('CY')] !== -1 ? r[idx('CY')] : r[idx('CFS')] !== -1 ? r[idx('CFS')] : '';
-        const truckArrRaw = r[idx('TRUCK_ARR')] !== -1 ? r[idx('TRUCK_ARR')] : r[idx('TRUCK ARR')] !== -1 ? r[idx('TRUCK ARR')] : r[idx('ARRIVAL')] !== -1 ? r[idx('ARRIVAL')] : '';
-        const truckDepRaw = r[idx('TRUCK_DEP')] !== -1 ? r[idx('TRUCK_DEP')] : r[idx('TRUCK DEP')] !== -1 ? r[idx('TRUCK DEP')] : r[idx('DEPARTURE')] !== -1 ? r[idx('DEPARTURE')] : '';
+    pendingExportRows = rows.map(r => {
+      let status = String(iStatus >= 0 ? r[iStatus] : '').trim();
+      if (/shipped|done|complete|đã xuất/i.test(status))      status = 'Đã xuất';
+      else if (/overdue|late|trễ/i.test(status))              status = 'Trễ tiến độ';
+      else if (/urgent|khẩn/i.test(status))                   status = 'Khẩn cấp';
+      else if (/pending|waiting|chờ/i.test(status))           status = 'Chờ xuất';
+      else status = '';
+      return {
+        customer     : String(r[iCust] || '').trim(),
+        country      : String(iCountry >= 0 ? r[iCountry] : '').trim(),
+        style        : String(iStyle   >= 0 ? r[iStyle]   : '').trim(),
+        hqCode       : String(iHQ      >= 0 ? r[iHQ]      : '').trim(),
+        customerCode : String(iCustCode >= 0 ? r[iCustCode] : '').trim(),
+        po           : String(iPO      >= 0 ? r[iPO]      : '').trim(),
+        qty          : Number(iQtyExp  >= 0 ? r[iQtyExp]  : 0) || 0,
+        qtyAct       : Number(iQtyAct  >= 0 ? r[iQtyAct]  : 0) || 0,
+        plannedDate  : (iPlanned >= 0 && r[iPlanned]) ? formatExcelDate(r[iPlanned]) : '',
+        actualDate   : (iActual  >= 0 && r[iActual])  ? formatExcelDate(r[iActual])  : '',
+        transport    : String(iTransport >= 0 ? r[iTransport] : 'SEA').trim() || 'SEA',
+        cutSI        : (iCutSI  >= 0 && r[iCutSI])  ? formatExcelDate(r[iCutSI])  : '',
+        cutCY        : (iCutCY  >= 0 && r[iCutCY])  ? formatExcelDate(r[iCutCY])  : '',
+        truckArrival : (iTruckArr >= 0 && r[iTruckArr]) ? formatExcelDate(r[iTruckArr]) : '',
+        truckDepart  : (iTruckDep >= 0 && r[iTruckDep]) ? formatExcelDate(r[iTruckDep]) : '',
+        container    : String(iCont >= 0 ? r[iCont] : '').trim(),
+        seal         : String(iSeal >= 0 ? r[iSeal] : '').trim(),
+        co           : String(iCO   >= 0 ? r[iCO]   : '').trim(),
+        status       : status,
+        remarks      : String(iRemarks >= 0 ? r[iRemarks] : '').trim(),
+      };
+    }).filter(r => r.customer);
 
-        // Lấy status — convert từ EN sang VI nếu cần
-        let status = String(r[idx('STATUS')] || '').trim();
-        if (!status || status === '0') status = '';
-        // Normalize status sang tiếng Việt
-        if (/shipped|done|complete/i.test(status))   status = 'Đã xuất';
-        else if (/overdue|late|trễ/i.test(status))  status = 'Trễ tiến độ';
-        else if (/urgent/i.test(status))             status = 'Khẩn cấp';
-        else if (/pending|waiting|chờ/i.test(status)) status = 'Chờ xuất';
-
-        return {
-          customer     : String(r[custIdx] || '').trim(),
-          country      : String(r[idx('COUNTRY')] !== -1 ? r[idx('COUNTRY')] : r[idx('EXPORT_COUNTRY')] !== -1 ? r[idx('EXPORT_COUNTRY')] : '') || '',
-          style        : String(r[idx('STYLE')] !== -1 ? r[idx('STYLE')] : r[idx('FACTORY_STYLE')] !== -1 ? r[idx('FACTORY_STYLE')] : '') || '',
-          hqCode       : String(r[idx('HQ')] || '') || '',
-          customerCode : String(r[idx('CUSTOMER_CODE')] !== -1 ? r[idx('CUSTOMER_CODE')] : r[idx('CUST')] !== -1 ? r[idx('CUST')] : '') || '',
-          po           : String(r[idx('PO')] || '') || '',
-          qty          : Number(r[idx('QTY_EXP')] !== -1 ? r[idx('QTY_EXP')] : r[idx('QTY')] !== -1 ? r[idx('QTY')] : 0) || 0,
-          qtyAct       : Number(r[idx('QTY_ACT')] || 0) || 0,
-          plannedDate  : plannedRaw ? formatExcelDate(plannedRaw) : '',
-          actualDate   : actualRaw  ? formatExcelDate(actualRaw)  : '',
-          transport    : String(r[idx('TRANSPORT')] || r[idx('MODE')] || '') || 'SEA',
-          cutSI        : cutSIRaw   ? formatExcelDate(cutSIRaw)   : '',
-          cutCY        : cutCYRaw   ? formatExcelDate(cutCYRaw)   : '',
-          truckArr     : truckArrRaw ? formatExcelDate(truckArrRaw) : '',
-          truckDep     : truckDepRaw ? formatExcelDate(truckDepRaw) : '',
-          container    : String(r[idx('CONT')] !== -1 ? r[idx('CONT')] : r[idx('CONTAINER')] !== -1 ? r[idx('CONTAINER')] : '') || '',
-          containerSeal: String(r[idx('SEAL')] || '') || '',
-          co           : String(r[idx('C/O')] !== -1 ? r[idx('C/O')] : r[idx('CO')] !== -1 ? r[idx('CO')] : '') || '',
-          status       : status,
-          remarks      : String(r[idx('REMARK')] || '') || '',
-        };
-      }).filter(r => r.customer);
-
-      pendingImportRows = []; // clear import
-      document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingExportRows.length} lô`;
-      document.getElementById('previewHead').innerHTML = '<th>Customer</th><th>Style</th><th>PO</th><th>Planned</th><th>Transport</th><th>Qty</th>';
-      document.getElementById('previewBody').innerHTML = pendingExportRows.slice(0,5).map(r => `<tr>
-        <td>${r.customer}</td><td>${r.style}</td><td>${r.po}</td>
-        <td>${r.plannedDate||'–'}</td><td>${r.transport}</td><td>${r.qty}</td>
-      </tr>`).join('');
-      document.getElementById('uploadPreview').style.display = 'block';
-      showToast(`Đã đọc ${pendingExportRows.length} lô xuất — kiểm tra và bấm Import`);
-
-    } else {
-      // ── FILE HÀNG NHẬP (IMPORT SCHEDULE) ──
-      const rows = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
-      pendingImportRows = rows.map(r => ({
-        shipper   : r[idx('SHIPPER')]    || '',
-        country   : r[idx('COUNTRY')]   || '',
-        etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
-        eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
-        vessel    : r[idx('VESSEL')]    || '',
-        cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
-        billNo    : r[idx('BILL')]      || '',
-        packages  : r[idx('PACKAGE')]   || 0,
-        weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
-        arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
-        shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
-        goodsType : r[idx('GOODS')]     || '',
-        invNo     : r[idx('INV')]       || '',
-        forwarder : r[idx('FORWARD')]   || '',
-        reasons   : r[idx('REASON')]    || '',
-      })).filter(r => r.shipper);
-
-      pendingExportRows = []; // clear export
-      document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô`;
-      document.getElementById('previewHead').innerHTML = '<th>Shipper</th><th>ETA</th><th>Mode</th><th>Kiện</th><th>KG</th><th>Về kho</th>';
-      document.getElementById('previewBody').innerHTML = pendingImportRows.slice(0,5).map(r => `<tr>
-        <td>${r.shipper}</td><td>${r.eta}</td><td>${r.shipMode}</td>
-        <td>${r.packages}</td><td>${r.weight}</td><td>${r.arrival||'–'}</td>
-      </tr>`).join('');
-      document.getElementById('uploadPreview').style.display = 'block';
-      showToast(`Đã đọc ${pendingImportRows.length} lô — kiểm tra và bấm Import`);
-    }
+    pendingImportRows = [];
+    document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingExportRows.length} lô xuất`;
+    document.getElementById('previewHead').innerHTML = '<th>Customer</th><th>Country</th><th>Style</th><th>PO</th><th>Planned</th><th>Transport</th><th>Qty</th>';
+    document.getElementById('previewBody').innerHTML = pendingExportRows.slice(0,5).map(r => `<tr>
+      <td>${r.customer}</td><td>${r.country}</td><td>${r.style}</td>
+      <td>${r.po}</td><td>${r.plannedDate||'–'}</td><td>${r.transport}</td><td>${r.qty}</td>
+    </tr>`).join('');
+    document.getElementById('uploadPreview').style.display = 'block';
+    showToast(`Đã đọc ${pendingExportRows.length} lô xuất — kiểm tra và bấm Import`);
   };
   reader.readAsArrayBuffer(file);
 }
@@ -2163,18 +2231,19 @@ async function submitImport() {
   try {
     let res;
     if (isExport) {
-      res = await api('addExport', { rows: pendingExportRows }, 'POST');
-      showToast(`✓ Đã import ${res.imported || pendingExportRows.length} lô xuất (bỏ qua ${res.skipped || 0} trùng)`, 'success');
+      // Gửi từng lô một vì addExport nhận single object
+      let imported = 0, skipped = 0;
+      for (const row of pendingExportRows) {
+        try {
+          await api('addExport', row, 'POST');
+          imported++;
+        } catch { skipped++; }
+      }
+      showToast(`✓ Đã import ${imported} lô xuất (bỏ qua ${skipped} lỗi)`, 'success');
     } else {
       res = await api('importExcel', { rows: pendingImportRows }, 'POST');
       showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     }
-    document.getElementById('uploadPreview').style.display = 'none';
-    pendingImportRows = [];
-    loadImports();
-  } catch(e) { showToast('Lỗi import: ' + e.message, 'error'); }
-}
-
 function formatExcelDate(val) {
   if (!val) return '';
   if (val instanceof Date) return val.toISOString().split('T')[0];
