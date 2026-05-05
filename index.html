@@ -2175,49 +2175,89 @@ async function handleExportFile(file) {
     let headerIdx = raw.findIndex(r => r.some(c => /CUSTOMER/i.test(String(c))));
     if (headerIdx === -1) headerIdx = 0;
     const headers = raw[headerIdx];
-    const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
-    const iCust = idx('CUSTOMER');
+
+    // FIX: idx() dùng exact word match để tránh 'PO' khớp vào 'Export_Country'
+    // Ưu tiên: tên cột khớp CHÍNH XÁC trước, sau đó mới dùng includes()
+    const idx = name => {
+      const n = name.toUpperCase().replace(/_/g,' ');
+      // 1. Exact match (bỏ dấu _/-/space)
+      let i = headers.findIndex(h => String(h).toUpperCase().replace(/[_\-]/g,' ').trim() === n);
+      if (i >= 0) return i;
+      // 2. Starts-with match
+      i = headers.findIndex(h => String(h).toUpperCase().replace(/[_\-]/g,' ').trim().startsWith(n));
+      if (i >= 0) return i;
+      // 3. Word boundary match: tên tìm phải là từ riêng, không nằm giữa từ khác
+      i = headers.findIndex(h => new RegExp('(?<![A-Z])' + n.replace(/ /g,'[_\- ]?') + '(?![A-Z])', 'i').test(String(h)));
+      return i;
+    };
+
+    const iCust    = headers.findIndex(h => /^customer$/i.test(String(h).trim()));
+    const iCountry = headers.findIndex(h => /^export_?country$/i.test(String(h).trim()));
+    const iStyle   = headers.findIndex(h => /^factory_?style$/i.test(String(h).trim()));
+    const iHQ      = headers.findIndex(h => /^hq_?code$/i.test(String(h).trim()));
+    const iCustCode= headers.findIndex(h => /^customer_?code$/i.test(String(h).trim()));
+    const iPO      = headers.findIndex(h => /^po$/i.test(String(h).trim()));           // Exact: chỉ 'PO'
+    const iQtyExp  = headers.findIndex(h => /^qty_?exp$/i.test(String(h).trim()));
+    const iQtyAct  = headers.findIndex(h => /^qty_?act$/i.test(String(h).trim()));
+    const iPlan    = headers.findIndex(h => /^planned_?date/i.test(String(h).trim())); // Planned_Date (có trailing space)
+    const iAct     = headers.findIndex(h => /^actual_?date$/i.test(String(h).trim()));
+    const iTrans   = headers.findIndex(h => /^transport$/i.test(String(h).trim()));
+    const iCutSI   = headers.findIndex(h => /^cut_?si$/i.test(String(h).trim()));
+    const iCutCY   = headers.findIndex(h => /^cut_?cy/i.test(String(h).trim()));       // Cut_CY/CFS
+    const iTruckA  = headers.findIndex(h => /^truck_?arr/i.test(String(h).trim()));
+    const iTruckD  = headers.findIndex(h => /^truck_?dep/i.test(String(h).trim()));
+    const iCont    = headers.findIndex(h => /^truck-cont$/i.test(String(h).trim()));
+    const iSeal    = headers.findIndex(h => /^container_?seal$/i.test(String(h).trim()));
+    const iCO      = headers.findIndex(h => /^c\/o$/i.test(String(h).trim()));         // Exact: 'C/O'
+    const iStatus  = headers.findIndex(h => /^status$/i.test(String(h).trim()));
+    const iRemark  = headers.findIndex(h => /^remarks?$/i.test(String(h).trim()));
+    const iId      = headers.findIndex(h => /^id$/i.test(String(h).trim()));
+
     const rows = raw.slice(headerIdx + 1).filter(r => {
       const v = iCust >= 0 ? r[iCust] : '';
+      // Lọc: có Customer, không phải công thức
       return v && String(v).trim() && !/^=/.test(String(v));
     });
+
+    // Status map: XLSX.js đọc cached value từ công thức IF → 'Shipped','Overdue','Urgent','Pending'
+    // Các giá trị này đã khớp trực tiếp với status chip trong UI — giữ nguyên
+    const mapStatus = raw => {
+      const s = String(raw || '').trim();
+      if (/^=/.test(s)) return ''; // Công thức chưa có cached value → bỏ qua
+      if (/shipped/i.test(s))  return 'Shipped';
+      if (/overdue/i.test(s))  return 'Overdue';
+      if (/urgent/i.test(s))   return 'Urgent';
+      if (/booked/i.test(s))   return 'Booked';
+      if (/pending/i.test(s))  return 'Pending';
+      return s; // giữ nguyên nếu đã là text hợp lệ
+    };
+
     pendingExportRows = rows.map(r => {
-      const iCountry = idx('COUNTRY') >= 0 ? idx('COUNTRY') : idx('EXPORT_COUNTRY');
-      const iStyle   = idx('STYLE')   >= 0 ? idx('STYLE')   : idx('FACTORY_STYLE');
-      const iQty     = idx('QTY_EXP') >= 0 ? idx('QTY_EXP') : idx('QTY');
-      const iPlan    = idx('PLANNED');
-      const iAct     = idx('ACTUAL');
-      const iTrans   = idx('TRANSPORT') >= 0 ? idx('TRANSPORT') : idx('MODE');
-      const iCutSI   = idx('CUT_SI') >= 0 ? idx('CUT_SI') : idx('CUT SI');
-      const iCutCY   = idx('CUT_CY') >= 0 ? idx('CUT_CY') : idx('CY/CFS') >= 0 ? idx('CY/CFS') : idx('CFS');
-      const iTruckA  = idx('TRUCK_ARR') >= 0 ? idx('TRUCK_ARR') : idx('TRUCK_ARRIVAL') >= 0 ? idx('TRUCK_ARRIVAL') : idx('TRUCK ARR');
-      const iTruckD  = idx('TRUCK_DEP') >= 0 ? idx('TRUCK_DEP') : idx('TRUCK_DEPARTURE') >= 0 ? idx('TRUCK_DEPARTURE') : idx('TRUCK DEP');
-      const iCont    = idx('TRUCK-CONT') >= 0 ? idx('TRUCK-CONT') : idx('CONTAINER');
-      let status = String(idx('STATUS') >= 0 ? r[idx('STATUS')] : '').trim();
-      if (/shipped|done|đã xuất/i.test(status)) status = 'Đã xuất';
-      else if (/overdue|late|trễ/i.test(status)) status = 'Trễ tiến độ';
-      else if (/pending|waiting|chờ/i.test(status)) status = 'Chờ xuất';
-      else status = '';
+      const rawId = iId >= 0 ? r[iId] : '';
+      // ID: số nguyên nếu là number, chuỗi nếu công thức (cached) → chuyển về string
+      const id = rawId && !String(rawId).startsWith('=') ? String(rawId) : '';
       return {
-        customer:     String(r[iCust]||'').trim(),
-        country:      String(iCountry>=0?r[iCountry]:'').trim(),
-        style:        String(iStyle>=0?r[iStyle]:'').trim(),
-        hqCode:       String(idx('HQ')>=0?r[idx('HQ')]:'').trim(),
-        customerCode: String(idx('CUSTOMER_CODE')>=0?r[idx('CUSTOMER_CODE')]:idx('CUST')>=0?r[idx('CUST')]:'').trim(),
-        po:           String(idx('PO')>=0?r[idx('PO')]:'').trim(),
-        qty:          Number(iQty>=0?r[iQty]:0)||0,
-        qtyAct:       Number(idx('QTY_ACT')>=0?r[idx('QTY_ACT')]:0)||0,
-        plannedDate:  iPlan>=0&&r[iPlan]?formatExcelDate(r[iPlan]):'',
-        actualDate:   iAct>=0&&r[iAct]?formatExcelDate(r[iAct]):'',
-        transport:    String(iTrans>=0?r[iTrans]:'SEA').trim()||'SEA',
-        cutSI:        iCutSI>=0&&r[iCutSI]?formatExcelDate(r[iCutSI]):'',
-        cutCY:        iCutCY>=0&&r[iCutCY]?formatExcelDate(r[iCutCY]):'',
-        truckArrival: iTruckA>=0&&r[iTruckA]?formatExcelDate(r[iTruckA]):'',
-        truckDepart:  iTruckD>=0&&r[iTruckD]?formatExcelDate(r[iTruckD]):'',
-        container:    String(iCont>=0?r[iCont]:'').trim(),
-        seal:         String(idx('SEAL')>=0?r[idx('SEAL')]:'').trim(),
-        co:           String(idx('C/O')>=0?r[idx('C/O')]:idx('CO')>=0?r[idx('CO')]:'').trim(),
-        status, remarks: String(idx('REMARK')>=0?r[idx('REMARK')]:'').trim(),
+        id,
+        customer:     String(r[iCust]   || '').trim(),
+        country:      String(iCountry>=0 ? r[iCountry] : '').trim(),
+        style:        String(iStyle>=0   ? r[iStyle]   : '').trim(),
+        hqCode:       String(iHQ>=0      ? r[iHQ]      : '').trim(),
+        customerCode: String(iCustCode>=0? r[iCustCode]: '').trim(),
+        po:           String(iPO>=0      ? r[iPO]      : '').trim(),
+        qty:          Number(iQtyExp>=0  ? r[iQtyExp]  : 0) || 0,
+        qtyAct:       Number(iQtyAct>=0  ? r[iQtyAct]  : 0) || 0,
+        plannedDate:  iPlan>=0 && r[iPlan] ? formatExcelDate(r[iPlan]) : '',
+        actualDate:   iAct>=0  && r[iAct]  ? formatExcelDate(r[iAct])  : '',
+        transport:    String(iTrans>=0   ? r[iTrans]   : 'SEA').trim() || 'SEA',
+        cutSI:        iCutSI>=0 && r[iCutSI] ? formatExcelDate(r[iCutSI]) : '',
+        cutCY:        iCutCY>=0 && r[iCutCY] ? formatExcelDate(r[iCutCY]) : '',
+        truckArr:     iTruckA>=0 && r[iTruckA]? formatExcelDate(r[iTruckA]): '',
+        truckDep:     iTruckD>=0 && r[iTruckD]? formatExcelDate(r[iTruckD]): '',
+        container:    String(iCont>=0    ? r[iCont]    : '').trim(),
+        containerSeal:String(iSeal>=0    ? r[iSeal]    : '').trim(),
+        co:           String(iCO>=0      ? r[iCO]      : '').trim(),
+        status:       mapStatus(iStatus>=0 ? r[iStatus] : ''),
+        remarks:      String(iRemark>=0  ? r[iRemark]  : '').trim(),
       };
     }).filter(r => r.customer);
     pendingImportRows = [];
@@ -2244,27 +2284,45 @@ async function handleFile(file) {
     let headerIdx = raw.findIndex(r => r.some(c => String(c).includes('SHIPPER') || String(c).includes('Shipper')));
     if (headerIdx === -1) headerIdx = 0;
     const headers = raw[headerIdx];
-    const rows    = raw.slice(headerIdx + 1).filter(r => r[0] && !isNaN(Number(r[0])));
+    // FIX: Cột A (Sr.No) dùng công thức =ROW()-1 → không phải số → bị lọc sai.
+    // Đổi sang lọc theo cột SHIPPER (col[1]) có giá trị thực.
+    const iShipper = headers.findIndex(h => h && String(h).toUpperCase().includes('SHIPPER'));
+    const rows    = raw.slice(headerIdx + 1).filter(r => {
+      const shipperVal = iShipper >= 0 ? r[iShipper] : r[1];
+      return shipperVal && String(shipperVal).trim() && !String(shipperVal).startsWith('=');
+    });
 
     // Map cột theo tên
     const idx = name => headers.findIndex(h => String(h).toUpperCase().includes(name.toUpperCase()));
-    pendingImportRows = rows.map(r => ({
-      shipper   : r[idx('SHIPPER')]    || '',
-      country   : r[idx('COUNTRY')]   || '',
-      etd       : r[idx('ETD')]       ? formatExcelDate(r[idx('ETD')])    : '',
-      eta       : r[idx('ETA')]       ? formatExcelDate(r[idx('ETA')])    : '',
-      vessel    : r[idx('VESSEL')]    || '',
-      cdNo      : r[idx('CD NO')]     || r[idx('CD_NO')] || '',
-      billNo    : r[idx('BILL')]      || '',
-      packages  : r[idx('PACKAGE')]   || 0,
-      weight    : r[idx('WEIGH')]     || r[idx('WEIGHT')] || 0,
-      arrival   : r[idx('ARRIVAL')]   ? formatExcelDate(r[idx('ARRIVAL')]) : '',
-      shipMode  : r[idx('SHIP MODE')] || r[idx('SHIP_MODE')] || '',
-      goodsType : r[idx('GOODS')]     || '',
-      invNo     : r[idx('INV')]       || '',
-      forwarder : r[idx('FORWARD')]   || '',
-      reasons   : r[idx('REASON')]    || '',
-    })).filter(r => r.shipper);
+    pendingImportRows = rows.map(r => {
+      // Map status: Sheet dùng 'Trễ hạn'/'Đúng hạn' (công thức IF) hoặc text trực tiếp
+      const rawStatus = String(r[idx('STATUS')] || r[idx('TIẾN ĐỘ')] || '').trim();
+      let mappedStatus = '';
+      if (/trễ hạn|trễ tiến độ|late|not ok/i.test(rawStatus)) mappedStatus = 'Trễ tiến độ';
+      else if (/đúng hạn|đúng tiến độ|on.time|ok/i.test(rawStatus)) mappedStatus = 'Đúng tiến độ';
+      // arrivalTime: cột 'Time of delivery'
+      const rawArrTime = r[idx('TIME OF DELIVERY')] || r[idx('TIME OF')] || '';
+      return {
+        shipper   : String(r[idx('SHIPPER')]  || '').trim(),
+        country   : String(r[idx('COUNTRY')]  || '').trim(),
+        etd       : r[idx('ETD')]    ? formatExcelDate(r[idx('ETD')])    : '',
+        eta       : r[idx('ETA')]    ? formatExcelDate(r[idx('ETA')])    : '',
+        vessel    : String(r[idx('VESSEL')]   || '').trim(),
+        cdNo      : String(r[idx('CD NO')]    || r[idx('CD_NO')] || '').trim(),
+        cdDate    : r[idx('CD DATE')] || r[idx('CD date')] ? formatExcelDate(r[idx('CD DATE')] || r[idx('CD date')]) : '',
+        billNo    : String(r[idx('BILL')]     || '').trim(),
+        packages  : Number(r[idx('PACKAGE')]  || 0) || 0,
+        weight    : Number(r[idx('WEIGH')]    || r[idx('WEIGHT')] || 0) || 0,
+        arrival   : r[idx('ARRIVAL')] ? formatExcelDate(r[idx('ARRIVAL')]) : '',
+        arrivalTime: String(rawArrTime || '').trim(),
+        shipMode  : String(r[idx('SHIP MODE')] || r[idx('TRANSPORTATION')] || '').trim(),
+        goodsType : String(r[idx('GOODS')]    || r[idx('TYPE OF GOODS')] || '').trim(),
+        invNo     : String(r[idx('INV')]      || '').trim(),
+        forwarder : String(r[idx('FORWARD')]  || '').trim(),
+        reasons   : String(r[idx('REASON')]   || '').trim(),
+        status    : mappedStatus,
+      };
+    }).filter(r => r.shipper && !r.shipper.startsWith('='));
 
     // Show preview
     document.getElementById('previewTitle').textContent = `${file.name} — Sheet: ${sheetName} — ${pendingImportRows.length} lô`;
