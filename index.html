@@ -2244,6 +2244,14 @@ async function submitImport() {
       res = await api('importExcel', { rows: pendingImportRows }, 'POST');
       showToast(`✓ Đã import ${res.imported} lô (bỏ qua ${res.skipped} trùng)`, 'success');
     }
+    document.getElementById('uploadPreview').style.display = 'none';
+    pendingImportRows = []; pendingExportRows = [];
+    await loadData();
+  } catch(err) {
+    showToast('Lỗi import: ' + err.message, 'error');
+  }
+}
+
 function formatExcelDate(val) {
   if (!val) return '';
   if (val instanceof Date) return val.toISOString().split('T')[0];
