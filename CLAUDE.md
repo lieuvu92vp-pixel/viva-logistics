@@ -10,9 +10,20 @@ Google Sheet; there is no backend/database in this repo.
   deploy artifact.
 - No CI workflows, no tests. Verification is manual (open the file / deployed
   URL in a browser and click through).
-- Hosting: not configured in-repo (no `netlify.toml`, `_redirects`, or GitHub
-  Pages workflow present). Confirm with the user how `index.html` reaches
-  production before assuming a deploy path.
+- Hosting: **production is `https://viva-logistics.lieuvu-92-vp.workers.dev`,
+  deployed by manually uploading `index.html` to Cloudflare via the
+  dashboard** — this repo's GitHub history is not the deploy source for that
+  Worker. A separate Cloudflare Pages project (`viva-logistics.pages.dev`)
+  *is* Git-connected and auto-deploys from this repo, but it is not the URL
+  staff/customers actually use — treat it as unused/stale, not production.
+  This split happened deliberately: an earlier attempt at GitHub-driven
+  auto-deploy reportedly broke something related to Apps Script (GAS),
+  suspected to be origin/CORS allowlisting rejecting Cloudflare Pages'
+  per-deploy preview URLs. Details of that failure aren't documented, so
+  **don't try to reconnect Git-based auto-deploy for production** without
+  first confirming with the user — the safe workflow is: edit `index.html`
+  in this repo, hand the finished file to the user, they upload it to
+  Cloudflare by hand.
 
 ## Data flow
 
